@@ -7,7 +7,7 @@ learning exercise in ECDSA.
 Some day I'd like to replace the dependancy on OpenSSL with
 my own implementation of ECDSA.
 	
-== Command-line options ==
+## Command-line options
 
 --input-type : Input data type, can be one of :
  private-key     : ECDSA private key
@@ -21,7 +21,7 @@ my own implementation of ECDSA.
  hex             : hexadecimal encoded
  base58check     : Base58Check encoded
 
--output-type   Output data type, can be one of :
+--output-type   Output data type, can be one of :
  private-key     : ECDSA private key
  public-key      : ECDSA public key
  public-key-sha  : SHA256(public key)
@@ -29,34 +29,34 @@ my own implementation of ECDSA.
  address         : Bitcoin address (version + hash)
  all             : all output types as type:value
 
--output-format Output data format, can be one of :
-raw             : raw binary data\n"
-hex             : hexadecimal encoded\n"
-base58check     : Base58Check encoded\n"
+--output-format Output data format, can be one of :
+raw             : raw binary data
+hex             : hexadecimal encoded
+base58check     : Base58Check encoded
 
--input         Specify input data\n"
--input-file    Specify input file name\n"
+--input         Specify input data - can be raw data, private key, public or address
+--input-file    Specify input file name
 
 == Examples ==
 
 Show address for specified base58 private key
- --input-type private-key \
- --input-format base58check \
- --input 5J2YUwNA5hmZFW33nbUCp5TmvszYXxVYthqDv7axSisBjFJMqaT \
- --output-type address \
- --output-format base58check
+    --input-type private-key \\
+    --input-format base58check \\
+    --input 5J2YUwNA5hmZFW33nbUCp5TmvszYXxVYthqDv7axSisBjFJMqaT \\
+    --output-type address \\
+    --output-format base58check
  
 Show address for random private key (generate random address)
- --input-type private-key \
- --input-format raw \
- --input-file <(openssl rand 64) \
- --output-type address \
- --output-format base58check
+    --input-type private-key \\
+    --input-format raw \\
+    --input-file <\(openssl rand 64\) \\
+    --output-type address \\
+    --output-format base58check
 
 Show hex public key for SHA256-hashed string used as private key
- --input-type private-key \
- --input-format raw \
- --input-file <(echo -n sausage|openssl dgst -sha256 -binary) \
- --output-type public-key \
- --output-format hex
-
+    --input-type private-key \\
+    --input-format raw \\
+    --input-file <\(echo -n sausage|openssl dgst -sha256 -binary\) \\
+    --output-type public-key \\
+    --output-format hex
+ 
