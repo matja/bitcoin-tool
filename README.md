@@ -9,7 +9,7 @@ learning exercise in ECDSA.
 Some day I'd like to replace the dependancy on OpenSSL with
 my own implementation of ECDSA.
 
-## Command-line options
+### Command-line options
 
     --input-type : Input data type, can be one of :
         private-key     : ECDSA private key
@@ -39,25 +39,25 @@ my own implementation of ECDSA.
     --input         Specify input data - can be raw data, private key, public or address
     --input-file    Specify input file name
 
-== Examples ==
+### Examples
 
 Show address for specified base58 private key
-    --input-type private-key \\
-    --input-format base58check \\
-    --input 5J2YUwNA5hmZFW33nbUCp5TmvszYXxVYthqDv7axSisBjFJMqaT \\
-    --output-type address \\
+    --input-type private-key
+    --input-format base58check
+    --input 5J2YUwNA5hmZFW33nbUCp5TmvszYXxVYthqDv7axSisBjFJMqaT
+    --output-type address
     --output-format base58check
 
 Show address for random private key (generate random address)
-    --input-type private-key \\
+    --input-type private-key
     --input-format raw \\
-    --input-file <\(openssl rand 64\) \\
-    --output-type address \\
+    --input-file <\(openssl rand 64\)
+    --output-type address
     --output-format base58check
 
 Show hex public key for SHA256-hashed string used as private key
-    --input-type private-key \\
-    --input-format raw \\
-    --input-file <\(echo -n sausage|openssl dgst -sha256 -binary\) \\
-    --output-type public-key \\
+    --input-type private-key
+    --input-format raw
+    --input-file <\(echo -n sausage|openssl dgst -sha256 -binary\)
+    --output-type public-key
     --output-format hex
