@@ -45,19 +45,19 @@ my own implementation of ECDSA.
 
 Let's manually generate a Bitcoin address and private key for the purpose of an offline wallet (cold storage).
 
-Create private key
+Create private key:
 ```
 $ openssl rand 32 > key.bin
 ```
 
-Inspect private key
+Inspect private key:
 ```
 $ hexdump -e '32/1 "%02X" "\n"' key.bin
 
 62A87AD3272B41E67108FEA10C57BA6ED609F2F7A2264A83B690CD45707090D1
 ```
 
-Convert private key to WIF (Wallet Import Format)
+Convert private key to WIF (Wallet Import Format):
 ```
 $ ./bitcoin-tool \
     --input-type private-key \
@@ -69,7 +69,7 @@ $ ./bitcoin-tool \
 5JZjfs5wJv1gNkJXCmYpyj6VxciqPkwmK4yHW8zMmPN1PW7Hk7F
 ```
 
-Show address for WIF private key
+Show address for WIF private key:
 ```
 $ ./bitcoin-tool \
     --input-type private-key \
@@ -80,6 +80,13 @@ $ ./bitcoin-tool \
     
 1KYv3U6gWcxS5UfbNzP25eDEjd5PHHB5Gh    
 ```
+
+Convert the WIF private key to a QR code so we can print it and import it easily later:
+```
+$ qrencode -d 300 -s 3 -l H 5JZjfs5wJv1gNkJXCmYpyj6VxciqPkwmK4yHW8zMmPN1PW7Hk7F -o privkey.png
+```
+
+Now you can receive Bitcoins using the address above, but you will need to import the private key at a later time in order to spend them. (`bitcoind importprivkey`, for the official client)
  
 #### Generate address from random private key
 ```
@@ -105,3 +112,4 @@ Hash a text phrase with SHA256, which is then used as the private key to generat
     --output-type public-key \
     --output-format hex
 ```
+
