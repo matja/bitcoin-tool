@@ -41,23 +41,67 @@ my own implementation of ECDSA.
 
 ### Examples
 
-Show address for specified base58 private key
-    --input-type private-key
-    --input-format base58check
-    --input 5J2YUwNA5hmZFW33nbUCp5TmvszYXxVYthqDv7axSisBjFJMqaT
-    --output-type address
+#### Manual address / key generation
+
+Let's manually generate a Bitcoin address and private key for the purpose of an offline wallet (cold storage).
+
+Create private key
+```
+$ openssl rand 32 > key.bin
+```
+
+Inspect private key
+```
+$ hexdump -e '32/1 "%02X" "\n"' key.bin
+
+62A87AD3272B41E67108FEA10C57BA6ED609F2F7A2264A83B690CD45707090D1
+```
+
+Convert private key to WIF (Wallet Import Format)
+```
+$ ./bitcoin-tool \
+    --input-type private-key \
+    --input-format raw \
+    --input-file key.bin \
+    --output-type private-key \
     --output-format base58check
 
-Show address for random private key (generate random address)
-    --input-type private-key
-    --input-format raw \\
-    --input-file <\(openssl rand 64\)
-    --output-type address
-    --output-format base58check
+5JZjfs5wJv1gNkJXCmYpyj6VxciqPkwmK4yHW8zMmPN1PW7Hk7F
+```
 
-Show hex public key for SHA256-hashed string used as private key
-    --input-type private-key
-    --input-format raw
-    --input-file <\(echo -n sausage|openssl dgst -sha256 -binary\)
-    --output-type public-key
+Show address for WIF private key
+```
+$ ./bitcoin-tool \
+    --input-type private-key \
+    --input-format base58check \
+    --input 5JZjfs5wJv1gNkJXCmYpyj6VxciqPkwmK4yHW8zMmPN1PW7Hk7F \
+    --output-type address \
+    --output-format base58check
+    
+1KYv3U6gWcxS5UfbNzP25eDEjd5PHHB5Gh    
+```
+ 
+#### Generate address from random private key
+```
+./bitcoin-tool \
+    --input-type private-key \
+    --input-format raw \
+    --input-file <(openssl rand 64) \
+    --output-type address \
+    --output-format base58check
+```
+This outputs an address you can send Bitcoins to, if you want to loose them forever (because the private key is never output!).
+
+#### Poor-mans brainwallet
+
+Hash a text phrase with SHA256, which is then used as the private key to generate an address from.
+
+**Never use this example for an actual wallet, it will be stolen almost immediately!**
+```
+./bitcoin-tool \
+    --input-type private-key \
+    --input-format raw \
+    --input-file <(echo -n sausage|openssl dgst -sha256 -binary) \
+    --output-type public-key \
     --output-format hex
+```
