@@ -50,6 +50,24 @@ to generate a compressed or uncompressed public key from this private key.
 	enum BitcoinPublicKeyCompression public_key_compression;
 };
 
+/** @brief Return the size in bytes of a public key.
+ *         Compressed keys are 33 bytes, which are composed of a byte
+ *         indicating the sign of the y coordinate of the point on the curve,
+ *         followed by 32 bytes of the x coordinate.
+ *          
+ *         Uncompressed keys are 65 bytes, which are composed of 0x04 byte
+ *         followed by 32 bytes of the x coordinate, then 32 bytes of the
+ *         y coordinate of the point on the curve.
+ *
+ *         All the bytes of the public key (either 33 or 65) are then hashed
+ *         to derive the Bitcoin address.
+ *
+ *  @param public_key[input] Pointer to public key to read.
+ *
+ *  @return size of public key in bytes, or 0 if failure.
+ */
+size_t BitcoinPublicKey_GetSize(const struct BitcoinPublicKey *public_key);
+
 /** @brief Convert a private key to a public key.
  *
  *  @param public_key[output] Pointer to public key to write.

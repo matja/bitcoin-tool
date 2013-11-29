@@ -88,7 +88,6 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 	}	
 
 	size2 = i2o_ECPublicKey(key, &public_key_ptr);
-	printf("%s: size2: %u\n", __func__, (unsigned)size);
 	if (size2 != expected_public_key_size) {
 		fprintf(stderr, "%s: invalid public key size (%u), should be %u\n",
 			__func__,
