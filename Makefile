@@ -1,5 +1,4 @@
-CC = clang
-CFLAGS = -O0 -ggdb -ansi -pedantic -Wall
+CFLAGS = -O0 -ansi -pedantic -Wall
 LIBS = -lrt
 
 .PHONY : all clean
