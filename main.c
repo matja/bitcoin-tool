@@ -231,7 +231,7 @@ static void BitcoinTool_outputAddressBase58(BitcoinTool *self)
 
 static void BitcoinTool_outputPublicKeyRaw(const struct BitcoinPublicKey *public_key)
 {
-	int bytes_wrote = fwrite(&public_key->data, BITCOIN_PUBLIC_KEY_SIZE, 1, stdout);
+	int bytes_wrote = fwrite(&public_key->data, BitcoinPublicKey_GetSize(public_key), 1, stdout);
 	if (bytes_wrote <= 0) {
 		fprintf(stderr, "failed to write output\n");
 	}
@@ -239,14 +239,14 @@ static void BitcoinTool_outputPublicKeyRaw(const struct BitcoinPublicKey *public
 
 static void BitcoinTool_outputPublicKeyHex(const struct BitcoinPublicKey *public_key)
 {
-	Bitcoin_OutputHex(&public_key->data, BITCOIN_PUBLIC_KEY_SIZE);
+	Bitcoin_OutputHex(&public_key->data, BitcoinPublicKey_GetSize(public_key));
 }
 
 static void BitcoinTool_outputPublicKeyBase58(const struct BitcoinPublicKey *public_key)
 {
 	char output_text[256];
 	size_t output_text_size = sizeof(output_text);
-	if (!Bitcoin_EncodeBase58Check(output_text, &output_text_size, &public_key->data, BITCOIN_PUBLIC_KEY_SIZE)) {
+	if (!Bitcoin_EncodeBase58Check(output_text, &output_text_size, &public_key->data, BitcoinPublicKey_GetSize(public_key))) {
 		int bytes_wrote = fwrite(output_text, output_text_size, 1, stdout);
 		if (bytes_wrote <= 0) {
 			fprintf(stderr, "failed to write output\n");
@@ -379,10 +379,10 @@ static int BitcoinTool_run(BitcoinTool *self)
 		case INPUT_TYPE_PUBLIC_KEY :
 			switch (self->options.input_format) {
 				case INPUT_FORMAT_RAW :
-					memcpy(&self->public_key.data, input, BITCOIN_PUBLIC_KEY_SIZE);
+					memcpy(&self->public_key.data, input, BitcoinPublicKey_GetSize(&self->public_key));
 					break;
 				case INPUT_FORMAT_HEX : {
-					Bitcoin_DecodeHex(&self->public_key, BITCOIN_PUBLIC_KEY_SIZE
+					Bitcoin_DecodeHex(&self->public_key, BitcoinPublicKey_GetSize(&self->public_key)
 						,input
 						,input_size
 					);

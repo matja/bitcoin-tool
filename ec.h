@@ -19,16 +19,35 @@ struct BitcoinAddress
 	unsigned char data[BITCOIN_ADDRESS_SIZE];
 };
 
-#define BITCOIN_PUBLIC_KEY_SIZE 65
-struct BitcoinPublicKey
-{
-	unsigned char data[BITCOIN_PUBLIC_KEY_SIZE];
+/* elliptic curve public key declarations */
+
+#define BITCOIN_PUBLIC_KEY_COMPRESSED_SIZE 33
+#define BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE 65
+
+enum BitcoinPublicKeyCompression {
+	BITCOIN_PUBLIC_KEY_COMPRESSED,
+	BITCOIN_PUBLIC_KEY_UNCOMPRESSED
 };
 
+struct BitcoinPublicKey
+{
+	unsigned char data[BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE];
+	enum BitcoinPublicKeyCompression compression;
+};
+
+/* elliptic curve private key declarations */
+
 #define BITCOIN_PRIVATE_KEY_SIZE 32
+
+
 struct BitcoinPrivateKey
 {
 	unsigned char data[BITCOIN_PRIVATE_KEY_SIZE];
+/*
+a private key is never actually compressed, this flag just indicates wether
+to generate a compressed or uncompressed public key from this private key.
+*/	
+	enum BitcoinPublicKeyCompression public_key_compression;
 };
 
 /** @brief Convert a private key to a public key.
