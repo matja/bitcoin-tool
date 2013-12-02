@@ -9,6 +9,7 @@
 
 #include <stdlib.h> /* size_t type */
 #include <stdint.h> /* uint* types */
+ #include "result.h"
 
 /** @brief Convert ASCII hex digit to its value.
  *
@@ -27,9 +28,9 @@ int Bitcoin_DecodeHexChar(uint_fast8_t *output, char c);
  *  @param[in] source Pointer to multiple of two hex digits.
  *  @param[in] source_size Count of multiple of two hex digits.
 
- *  @return 1 if chars were valid, 0 if a char was invalid.
+ *  @return BITCOIN_SUCCESS if chars were valid.
  */
-int Bitcoin_DecodeHex(void *output, size_t output_size,
+BitcoinResult Bitcoin_DecodeHex(void *output, size_t output_size,
 	const char *source, size_t source_size
 );
 
@@ -49,7 +50,6 @@ void Bitcoin_OutputHex(const void *source, size_t source_size);
  */
 void Bitcoin_OutputHexPretty(const void *source, size_t source_size);
 
-
 /** @brief Reverse the bytes in a buffer.
  *         eg: {1,2,3,0} will become {0,3,2,1}
  *
@@ -57,5 +57,14 @@ void Bitcoin_OutputHexPretty(const void *source, size_t source_size);
  *  @param[in] size Number of bytes to reverse.
  */
 void Bitcoin_ReverseBytes(void *buffer, size_t size);
+
+/** @brief Return maximum value of two unsigned inputs.
+ *
+ *  @param[in] a 1st value.
+ *  @param[in] b 2nd value.
+
+ *  @return largest value
+ */
+unsigned uint_max2(unsigned a, unsigned b);
 
 #endif

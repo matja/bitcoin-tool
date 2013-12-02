@@ -15,6 +15,7 @@ typedef enum BitcoinResult {
 	,BITCOIN_ERROR_PUBLIC_KEY_INVALID_FORMAT
 	,BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL
 	,BITCOIN_ERROR_CHECKSUM_FAILURE
+	,BITCOIN_ERROR_INVALID_FORMAT
 } BitcoinResult;
 
 /** @brief Return the text message corresponding to a BitcoinResult.

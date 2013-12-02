@@ -11,6 +11,12 @@ reference : https://en.bitcoin.it/wiki/Secp256k1
 
 #include "ec.h"
 #include "base58.h"
+#include "applog.h"
+
+int BitcoinPublicKey_Empty(const struct BitcoinPublicKey *public_key)
+{
+	return public_key->compression == BITCOIN_PUBLIC_KEY_EMPTY;
+}
 
 size_t BitcoinPublicKey_GetSize(const struct BitcoinPublicKey *public_key)
 {
@@ -43,9 +49,21 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 	BIGNUM private_key_bn;
 	const EC_GROUP *group = EC_KEY_get0_group(key);
 	int size, size2;
-	unsigned ec_compression = private_key->public_key_compression;
+	unsigned compression = private_key->public_key_compression;
 	size_t expected_public_key_size = 0;
 	enum BitcoinPublicKeyCompression public_key_compression;
+
+	switch (compression) {
+		case BITCOIN_PUBLIC_KEY_COMPRESSED :
+		case BITCOIN_PUBLIC_KEY_UNCOMPRESSED :
+			break;
+		default :
+			applog(APPLOG_ERROR, __func__,
+				"public key compression is not specified, please set using --public-key-compression compressed/uncompressed"
+			);
+			return BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT;
+			break;
+	}
 
 	BN_init(&private_key_bn);
 	BN_bin2bn(private_key->data, BITCOIN_PRIVATE_KEY_SIZE, &private_key_bn);
@@ -65,7 +83,7 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 	EC_KEY_set_private_key(key, &private_key_bn);
 	EC_KEY_set_public_key(key, ec_public);
 
-	if (ec_compression == BITCOIN_PUBLIC_KEY_COMPRESSED) {
+	if (compression == BITCOIN_PUBLIC_KEY_COMPRESSED) {
 		EC_KEY_set_conv_form(key, POINT_CONVERSION_COMPRESSED);
 		expected_public_key_size = BITCOIN_PUBLIC_KEY_COMPRESSED_SIZE;
 		public_key_compression = BITCOIN_PUBLIC_KEY_COMPRESSED;
@@ -196,7 +214,49 @@ BitcoinResult Bitcoin_LoadPublicKeyFromBase58(
 )
 {
 /*
-not implemented - does anyone use this?
+not implemented - is this useful for anything?
 */
 	return BITCOIN_ERROR_NOT_IMPLEMENTED;
 }
+
+BitcoinResult Bitcoin_LoadPublicKeyFromHex(
+	struct BitcoinPublicKey *output_public_key,
+	const char *input_text, size_t input_size
+)
+{
+/*
+useful for converting hex dumps of transactions into addresses.
+*/
+	uint8_t buffer[BITCOIN_PUBLIC_KEY_MAX_SIZE];
+	int error;
+
+	if (input_size & 1) {
+		/* need a whole number of bytes */
+		return BITCOIN_ERROR_PUBLIC_KEY_INVALID_FORMAT;
+	}
+
+	switch (input_size/2) {
+		case BITCOIN_PUBLIC_KEY_COMPRESSED_SIZE :
+			output_public_key->compression = BITCOIN_PUBLIC_KEY_COMPRESSED;
+			break;
+		case BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE :
+			output_public_key->compression = BITCOIN_PUBLIC_KEY_COMPRESSED;
+			break;
+		default :
+			/* invalid length */
+			return BITCOIN_ERROR_PUBLIC_KEY_INVALID_FORMAT;
+			break;
+ 	}
+
+	error = Bitcoin_DecodeHex(output_public_key->data, 
+		sizeof(output_public_key->data),
+		input_text, input_size
+	);
+
+	if (error) {
+		return error;
+	}
+
+	return BITCOIN_SUCCESS;
+}
+

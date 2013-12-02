@@ -1,13 +1,15 @@
 CFLAGS = -O0 -ansi -pedantic -Wall
 LIBS = -lrt
 
+OBJECTS = main.o ec.o hash.o utility.o base58.o result.o applog.o
+
 .PHONY : all clean
 
 all : bitcoin-tool
 
 clean :
-	@-rm bitcoin-tool main.o ec.o hash.o utility.o base58.o result.o
+	@-rm bitcoin-tool $(OBJECTS)
 
-bitcoin-tool : main.o ec.o hash.o utility.o base58.o result.o
+bitcoin-tool : $(OBJECTS)
 	$(CC) -o $@ $^ -lcrypto
 

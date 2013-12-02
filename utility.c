@@ -21,7 +21,7 @@ int Bitcoin_DecodeHexChar(uint_fast8_t *output, char c)
 	return 0;
 }
 
-int Bitcoin_DecodeHex(void *output, size_t output_size,
+BitcoinResult Bitcoin_DecodeHex(void *output, size_t output_size,
 	const char *source, size_t source_size
 )
 {
@@ -30,14 +30,14 @@ int Bitcoin_DecodeHex(void *output, size_t output_size,
 	while (source_size) {
 		uint_fast8_t high, low;
 
-		if (!Bitcoin_DecodeHexChar(&high, *source++)) { return 0; }
-		if (!Bitcoin_DecodeHexChar(&low, *source++)) { return 0; }
+		if (!Bitcoin_DecodeHexChar(&high, *source++)) { return BITCOIN_ERROR_INVALID_FORMAT; }
+		if (!Bitcoin_DecodeHexChar(&low, *source++)) { return BITCOIN_ERROR_INVALID_FORMAT; }
 
 		*output_bytes++ = (high << 4) | low;
 		source_size -= 2;
 	}
 
-	return 1;
+	return BITCOIN_SUCCESS;
 }
 
 void Bitcoin_OutputHex(const void *source, size_t source_size)
@@ -88,4 +88,9 @@ void Bitcoin_ReverseBytes(void *buffer, size_t size)
 		start++;
 		last--;
 	}
+}
+
+unsigned uint_max2(unsigned a, unsigned b)
+{
+	return a > b ? a : b;
 }

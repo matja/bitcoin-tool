@@ -9,6 +9,7 @@
 
 #include "hash.h" /* BITCOIN_RIPEMD160_SIZE */
 #include "result.h" /* BitcoinResult */
+#include "utility.h" /* uint_max2 */
 
 #define BITCOIN_TEXT_ADDRESS_MAX_SIZE BITCOIN_ADDRESS_SIZE
 
@@ -23,8 +24,13 @@ struct BitcoinAddress
 
 #define BITCOIN_PUBLIC_KEY_COMPRESSED_SIZE 33
 #define BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE 65
+#define BITCOIN_PUBLIC_KEY_MAX_SIZE uint_max2( \
+	BITCOIN_PUBLIC_KEY_COMPRESSED_SIZE, \
+	BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE \
+)
 
 enum BitcoinPublicKeyCompression {
+	BITCOIN_PUBLIC_KEY_EMPTY,
 	BITCOIN_PUBLIC_KEY_COMPRESSED,
 	BITCOIN_PUBLIC_KEY_UNCOMPRESSED
 };
@@ -49,6 +55,13 @@ to generate a compressed or uncompressed public key from this private key.
 */	
 	enum BitcoinPublicKeyCompression public_key_compression;
 };
+
+/** @brief Check if a public key is not set.
+ *  @param public_key[input] Pointer to public key to read.
+ *
+ *  @return 0 if not set, 1 otherwise.
+ */
+int BitcoinPublicKey_Empty(const struct BitcoinPublicKey *public_key);
 
 /** @brief Return the size in bytes of a public key.
  *         Compressed keys are 33 bytes, which are composed of a byte

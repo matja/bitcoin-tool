@@ -10,6 +10,8 @@
 #include "ec.h"
 #include "utility.h"
 #include "base58.h"
+#include "applog.h"
+#include "result.h"
 
 typedef struct BitcoinTool BitcoinTool;
 typedef struct BitcoinToolOptions BitcoinToolOptions;
@@ -46,6 +48,12 @@ struct BitcoinToolOptions {
 		OUTPUT_FORMAT_HEX,
 		OUTPUT_FORMAT_BASE58CHECK
 	} output_format;
+
+	enum PublicKeyCompression {
+		PUBLIC_KEY_COMPRESSION_AUTO,
+		PUBLIC_KEY_COMPRESSION_COMPRESSED,
+		PUBLIC_KEY_COMPRESSION_UNCOMPRESSED
+	} public_key_compression;
 };
 
 struct BitcoinTool {
@@ -58,12 +66,12 @@ struct BitcoinTool {
 	size_t output_text_size;
 
 	int (*parseOptions)(struct BitcoinTool *self, int argc, char *argv[]);
-	void (*syntax)(struct BitcoinTool *self);
+	void (*help)(struct BitcoinTool *self);
 	int (*run)(struct BitcoinTool *self);
 	void (*destroy)(struct BitcoinTool *self);
 };
 
-static void BitcoinTool_syntax(BitcoinTool *self)
+static void BitcoinTool_help(BitcoinTool *self)
 {
 	FILE *file = stderr;
 	fprintf(file,
@@ -72,7 +80,7 @@ static void BitcoinTool_syntax(BitcoinTool *self)
 		"\n"
 	);
 	fprintf(file,
-		"  -input-type    Input data type, can be one of :\n"
+		"  --input-type    Input data type, can be one of :\n"
 		"                   private-key     : ECDSA private key\n"
 		"                   public-key      : ECDSA public key\n"
 		"                   public-key-sha  : SHA256(public key)\n"
@@ -80,13 +88,13 @@ static void BitcoinTool_syntax(BitcoinTool *self)
 		"                   address         : Bitcoin address (version + hash)\n"
 	);
 	fprintf(file,
-		"  -input-format  Input data format, can be one of :\n"
+		"  --input-format  Input data format, can be one of :\n"
 		"                   raw             : raw binary data\n"
 		"                   hex             : hexadecimal encoded\n"
 		"                   base58check     : Base58Check encoded\n"
 	);
 	fprintf(file,
-		"  -output-type   Output data type, can be one of :\n"
+		"  --output-type   Output data type, can be one of :\n"
 		"                   private-key     : ECDSA private key\n"
 		"                   public-key      : ECDSA public key\n"
 		"                   public-key-sha  : SHA256(public key)\n"
@@ -95,21 +103,30 @@ static void BitcoinTool_syntax(BitcoinTool *self)
 		"                   all             : all output types as type:value\n"
 	);
 	fprintf(file,
-		"  -output-format Output data format, can be one of :\n"
+		"  --output-format Output data format, can be one of :\n"
 		"                   raw             : raw binary data\n"
 		"                   hex             : hexadecimal encoded\n"
 		"                   base58check     : Base58Check encoded\n"
 	);
 	fprintf(file,
-		"  -input         Specify input data\n"
-		"  -input-file    Specify input file name\n"
+		"  --input         Specify input data\n"
+		"  --input-file    Specify input file name\n"
+	);
+	fprintf(file,
+		"  --public-key-compression : can be one of :\n"
+		"      auto         : determine compression from base58 private key (default)\n"
+		"      compressed   : force compressed public key\n"
+		"      uncompressed : force uncompressed public key\n"
+		"    (must be compressed/uncompressed for raw/hex keys, should be auto for base58)\n"
+	);
+	fprintf(file,
 		"\n"
 	);
 	fprintf(file,
 		"Examples:\n"
 	);
 	fprintf(file,
-		"  Show address for specified base58 private key\n"
+		"  Show address for specified WIF private key\n"
 		"    --input-type private-key \\\n"
 		"    --input-format base58check \\\n"
 		"    --input 5J2YUwNA5hmZFW33nbUCp5TmvszYXxVYthqDv7axSisBjFJMqaT \\\n"
@@ -118,23 +135,14 @@ static void BitcoinTool_syntax(BitcoinTool *self)
 		"\n"
 	);
 	fprintf(file,
-		"  Show address for random private key (generate random address)\n"
+		"  Show everything for specified raw private key\n"
 		"    --input-type private-key \\\n"
 		"    --input-format raw \\\n"
-		"    --input-file <(openssl rand 64) \\\n"
-		"    --output-type address \\\n"
-		"    --output-format base58check \n"
+		"    --input-file <(openssl rand 32) \\\n"
+		"    --output-type all \\\n"
+		"    --public-key-compression compressed \n"
 		"\n"
-	);
-	fprintf(file,
-		"  Show hex public key for SHA256-hashed string used as private key\n"
-		"    --input-type private-key \\\n"
-		"    --input-format raw \\\n"
-		"    --input-file <(echo -n sausage|openssl dgst -sha256 -binary) \\\n"
-		"    --output-type public-key \\\n"
-		"    --output-format hex \n"
-		"\n"
-	);
+	);	
 }
 
 static int BitcoinTool_parseOptions(BitcoinTool *self
@@ -144,6 +152,8 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 {
 	unsigned i = 0;
 	BitcoinToolOptions *o = &self->options;
+
+	o->public_key_compression = PUBLIC_KEY_COMPRESSION_AUTO;
 
 	for (i=1; i<argc; i++) {
 		const char *a = argv[i];
@@ -174,9 +184,32 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			}
 			v = argv[i];
 			if (!strcmp(v, "address")) { o->output_type = OUTPUT_TYPE_ADDRESS; }
-			else if (!strcmp(v, "public-key")) { o->output_type = OUTPUT_TYPE_PUBLIC_KEY; }
-			else if (!strcmp(v, "private-key")) { o->output_type = OUTPUT_TYPE_PRIVATE_KEY; }
-			else if (!strcmp(v, "all")) { o->output_type = OUTPUT_TYPE_ALL; }
+			else if (!strcmp(v, "public-key")) {
+				o->output_type = OUTPUT_TYPE_PUBLIC_KEY;
+			} else if (!strcmp(v, "private-key")) {
+				o->output_type = OUTPUT_TYPE_PRIVATE_KEY;
+			} else if (!strcmp(v, "all")) {
+				o->output_type = OUTPUT_TYPE_ALL;
+			} else {
+				fprintf(stderr, "unknown value [%s] value for --output-type\n", v);
+				return 0;
+			}
+		} else if (!strcmp(a, "--public-key-compression")) {
+			if (++i >= argc) {
+				fprintf(stderr, "expected value for --public-key-compression\n");
+				return 0;
+			}
+			v = argv[i];
+			if (!strcmp(v, "auto")) {
+				o->public_key_compression = PUBLIC_KEY_COMPRESSION_AUTO;
+			} else if (!strcmp(v, "compressed")) {
+				o->public_key_compression = PUBLIC_KEY_COMPRESSION_COMPRESSED;
+			} else if (!strcmp(v, "uncompressed")) {
+				o->public_key_compression = PUBLIC_KEY_COMPRESSION_UNCOMPRESSED;
+			} else {
+				fprintf(stderr, "unknown value [%s] value for --public-key-type\n", v);
+				return 0;
+			}
 		} else if (!strcmp(a, "--output-format")) {
 			if (++i >= argc) {
 				fprintf(stderr, "expected value for --output-format\n");
@@ -198,7 +231,30 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 				return 0;
 			}
 			o->input = argv[i];
+		} else if (!strcmp(a, "--help")) {
+			BitcoinTool_help(self);
+		} else {
+			fprintf(stderr, "unknown option \"%s\"\n", a);
+			return 0;
 		}
+	}
+
+	if (!o->input && !o->input_file) {
+		fprintf(stderr, "either --input or --input-file must be specified\n");
+		return 0;
+	}
+
+	if (
+		INPUT_FORMAT_BASE58CHECK == o->input_format
+		&& (
+			PUBLIC_KEY_COMPRESSION_COMPRESSED == o->public_key_compression
+			|| PUBLIC_KEY_COMPRESSION_UNCOMPRESSED == o->public_key_compression
+		)
+	) {
+		applog(APPLOG_WARNING, __func__,
+			"using --input-format base58check with --public-key-compression"
+			" other than auto to override the WIF compression type is very"
+			" unusual, please be sure what you are doing!\n");
 	}
 
 	return argc > 1;
@@ -269,15 +325,33 @@ static void BitcoinTool_outputPrivateKeyHex(const struct BitcoinPrivateKey *priv
 	Bitcoin_OutputHex(&private_key->data, BITCOIN_PRIVATE_KEY_SIZE);
 }
 
-static void BitcoinTool_outputPrivateKeyBase58(const struct BitcoinPrivateKey *private_key)
+BitcoinResult BitcoinTool_outputPrivateKeyBase58(
+	const struct BitcoinPrivateKey *private_key
+)
 {
 	char output_text[256];
 	char private_key_buffer[256];
-	size_t private_key_buffer_size = BITCOIN_PRIVATE_KEY_SIZE + 1;
+	size_t private_key_buffer_size = 0;
 	size_t output_text_size = sizeof(output_text);
 
-	private_key_buffer[0] = '\x80';
+	private_key_buffer[0] = '\x80'; /* version */
 	memcpy(private_key_buffer+1, &private_key->data, BITCOIN_PRIVATE_KEY_SIZE);
+
+	switch (private_key->public_key_compression) {
+		case BITCOIN_PUBLIC_KEY_UNCOMPRESSED :
+			private_key_buffer_size = BITCOIN_PRIVATE_KEY_SIZE + 1; /* version + key */
+			break;
+		case BITCOIN_PUBLIC_KEY_COMPRESSED :
+			private_key_buffer_size = BITCOIN_PRIVATE_KEY_SIZE + 2; /* version + key + compression flag */
+			private_key_buffer[BITCOIN_PRIVATE_KEY_SIZE+1] = 1; /* compression flag */
+			break;
+		default :
+			applog(APPLOG_ERROR, __func__,
+				"public key compression is unspecified, please set using --public-key-compression compressed/uncompressed"
+			);
+			return BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT;
+			break;
+	}
 
 	if (!Bitcoin_EncodeBase58Check(output_text, &output_text_size, private_key_buffer, private_key_buffer_size)) {
 		int bytes_wrote = fwrite(output_text, output_text_size, 1, stdout);
@@ -287,6 +361,8 @@ static void BitcoinTool_outputPrivateKeyBase58(const struct BitcoinPrivateKey *p
 	} else {
 		fprintf(stderr, "self->output_text buffer too small\n");
 	}
+
+	return BITCOIN_SUCCESS;
 }
 
 static int BitcoinTool_run(BitcoinTool *self)
@@ -301,8 +377,6 @@ static int BitcoinTool_run(BitcoinTool *self)
 	if (self->options.input_file) {
 		FILE *file = NULL;
 		int bytes_read = 0;
-
-		printf("input file set\n");
 
 		file = fopen(self->options.input_file, "rb");
 		if (!file) {
@@ -358,10 +432,9 @@ static int BitcoinTool_run(BitcoinTool *self)
 						&self->private_key, input, input_size
 					);
 					if (error) {
-						fprintf(stderr
-							,"%s: failed to load private key from base58 string [%s]\n"
-							,__func__
-							,Bitcoin_ResultString(error)
+						applog(APPLOG_FATAL, __func__,
+							"failed to load private key from base58 string [%s]\n",
+							Bitcoin_ResultString(error)
 						);
 						return 0;
 					}
@@ -379,13 +452,22 @@ static int BitcoinTool_run(BitcoinTool *self)
 		case INPUT_TYPE_PUBLIC_KEY :
 			switch (self->options.input_format) {
 				case INPUT_FORMAT_RAW :
-					memcpy(&self->public_key.data, input, BitcoinPublicKey_GetSize(&self->public_key));
+					memcpy(&self->public_key.data, input,
+						BitcoinPublicKey_GetSize(&self->public_key)
+					);
 					break;
 				case INPUT_FORMAT_HEX : {
-					Bitcoin_DecodeHex(&self->public_key, BitcoinPublicKey_GetSize(&self->public_key)
-						,input
-						,input_size
+					int error = Bitcoin_LoadPublicKeyFromHex(
+						&self->public_key, input, input_size
 					);
+					if (error) {
+						fprintf(stderr
+							,"%s: failed to load public key from hex string [%s]\n"
+							,__func__
+							,Bitcoin_ResultString(error)
+						);
+						return 0;
+					}
 					break;
 				}
 				case INPUT_FORMAT_BASE58CHECK : {
@@ -437,11 +519,30 @@ static int BitcoinTool_run(BitcoinTool *self)
 			break;
 	}
 
+	/* override public key compression */
+	switch (self->options.public_key_compression) {
+		case PUBLIC_KEY_COMPRESSION_COMPRESSED :
+			self->private_key.public_key_compression =
+				BITCOIN_PUBLIC_KEY_COMPRESSED;
+			break;		
+		case PUBLIC_KEY_COMPRESSION_UNCOMPRESSED :		
+			self->private_key.public_key_compression =
+				BITCOIN_PUBLIC_KEY_UNCOMPRESSED;
+			break;
+		case PUBLIC_KEY_COMPRESSION_AUTO :
+		default :
+			break;
+	}
+
 	switch (self->options.output_type) {
 		case OUTPUT_TYPE_ALL :
 		case OUTPUT_TYPE_PUBLIC_KEY :
 		case OUTPUT_TYPE_ADDRESS :
-			Bitcoin_MakePublicKeyFromPrivateKey(&self->public_key, &self->private_key);
+			if (BitcoinPublicKey_Empty(&self->public_key)) {
+				if (Bitcoin_MakePublicKeyFromPrivateKey(&self->public_key, &self->private_key) != BITCOIN_SUCCESS) {
+					return 0;
+				}
+			}
 			break;
 		case OUTPUT_TYPE_NONE :
 		default :
@@ -451,7 +552,9 @@ static int BitcoinTool_run(BitcoinTool *self)
 	switch (self->options.output_type) {
 		case OUTPUT_TYPE_ALL :
 		case OUTPUT_TYPE_ADDRESS :
-			Bitcoin_MakeAddressFromPublicKey(&self->address, &self->public_key);
+			if (Bitcoin_MakeAddressFromPublicKey(&self->address, &self->public_key) != BITCOIN_SUCCESS) {
+				return 0;
+			}
 			break;
 		case OUTPUT_TYPE_NONE :
 		default :
@@ -552,7 +655,7 @@ BitcoinTool *BitcoinTool_create(void)
 {
 	BitcoinTool *self = (BitcoinTool *)calloc(1, sizeof(*self));
 
-	self->syntax = BitcoinTool_syntax;
+	self->help = BitcoinTool_help;
 	self->parseOptions = BitcoinTool_parseOptions;
 	self->run = BitcoinTool_run;
 	self->destroy = BitcoinTool_destroy;
@@ -565,8 +668,7 @@ int main(int argc, char *argv[])
 	BitcoinTool *bat = BitcoinTool_create();
 
 	if (!bat->parseOptions(bat, argc, argv)) {
-		bat->syntax(bat);
-		bat->destroy(bat);
+		bat->destroy(bat);		
 		return EXIT_FAILURE;
 	}
 	bat->run(bat);
