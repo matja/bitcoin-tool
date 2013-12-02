@@ -144,6 +144,13 @@ Hash a text phrase with SHA256, which is then used as the private key to generat
     --input-type private-key \
     --input-format raw \
     --input-file <(echo -n sausage|openssl dgst -sha256 -binary) \
-    --public-key-compression compressed \
+    --public-key-compression uncompressed \
     --output-type all
+
+address-hex:000511096ab078473911e0222fcbc3375314e2bab1
+address-base58:1TnnhMEgic5g4ttrCQyDopwqTs4hheuNZ
+public-key-hex:04a32ed011213146495f58d3ed83a6cc3fc0fd107d5fa2887bbc2fcea81e8bc84f650e81f4ddc84424daab546945f0d7d9dfd4dce39ce3776ee6b8ba78e6eddc7a
+public-key-base58:3gKQTqtZhdBHDDe1echja7ac39tup3SnNSzwZSrnHb417QbL7T8JcTfW7GgEQsvhYrPqLsiraabne6xDrSGZ6bBB4S5YGM
+private-key-hex:30caae2fcb7c34ecadfddc45e0a27e9103bd7cfc87730d7818cc096b1266a683
+private-key-base58:5JBmuBc64pVrKLyDc8ktyXJmAeEwKQogn6jsk6taeq8zRMtGZrE
 ```
