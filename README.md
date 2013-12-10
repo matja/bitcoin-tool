@@ -1,47 +1,55 @@
-Simple tool in C to convert Bitcoin keys to addresses.
+Simple tool in C to convert Bitcoin keys to addresses, and various other
+type conversions.
 
-Disclaimer: THIS CODE IS EXPERIMENTAL, IT IS PROBABLY BUGGY. PLEASE DO NOT TRUST YOUR BITCOINS WITH IT.  IT IS EASY TO MAKE AN IRREVERSIBLE MISTAKE AND SEND YOUR BITCOINS TO A ADDRESS WITH NO WAY OF GETTING THEM BACK.
+Disclaimer: THIS CODE IS EXPERIMENTAL, IT IS PROBABLY BUGGY. PLEASE DO NOT
+TRUST YOUR BITCOINS WITH IT.  IT IS EASY TO MAKE AN IRREVERSIBLE MISTAKE AND
+SEND YOUR BITCOINS TO A ADDRESS WITH NO WAY OF GETTING THEM BACK.
 
-Compile with `make`
+Compile with `make`.
 
-I created this I couldn't find a offline tool or library able
-to create addresses from Bitcoin private keys, and as a
-learning exercise in ECDSA.
+I created this because I couldn't find an offline tool or library able
+to create addresses from Bitcoin private keys, and as a learning exercise in
+Bitcoin address formats and ECDSA.
 
-Some day I'd like to replace the dependancy on OpenSSL with
-my own implementation of ECDSA.
+Some day I'd like to replace the dependancy on OpenSSL with my own
+implementation of ECDSA.
 
-The option names are a little verbose but I wanted to make it clear exactly what each one is referring to, especially when it is possible to make a costly mistake.
+The option names are a little verbose but I wanted to make it clear exactly what
+each one is referring to, especially when it is possible to make a costly
+mistake.
+
+I've tried to add as much sanity checking as possible, to remove the scope
+for errors and misinterpretation of data.  This sometimes boreders on the
+annoying: if the file for --input-file contains more data than is expected,
+it'll tell you off about that.
 
 ### Command-line options
 
     --input-type : Input data type, can be one of :
-        private-key     : ECDSA private key
-        public-key      : ECDSA public key
-        public-key-sha  : SHA256(public key)
-        public-key-rmd  : RIPEMD160(SHA256(public key))
-        address         : Bitcoin address (version + hash)
+        private-key     : 32 byte ECDSA private key
+        private-key-wif : 37/38 byte ECDSA private key in wallet import format
+        public-key      : 33/65 byte ECDSA public key
+        public-key-sha  : 32 byte SHA256(public key) hash
+        public-key-rmd  : 20 byte RIPEMD160(SHA256(public key)) hash
+        address         : 21 byte Bitcoin address (prefix + hash)
 
     --input-format : Input data format, can be one of :
         raw             : raw binary data
         hex             : hexadecimal encoded
+        base58          : Base58 encoded (almost never used in the wild)
         base58check     : Base58Check encoded
 
-    --output-type   Output data type, can be one of :
-        private-key     : ECDSA private key
-        public-key      : ECDSA public key
-        public-key-sha  : SHA256(public key)
-        public-key-rmd  : RIPEMD160(SHA256(public key))
-        address         : Bitcoin address (version + hash)
-        all             : all output types as type:value
+    --output-type   Output data type, can be any one of those used for
+                    --input-type, or additionally :
+        all             : all output types, as type:value pairs, most of which
+                          are never used, probably for good reason.
 
-    --output-format Output data format, can be one of :
-        raw             : raw binary data
-        hex             : hexadecimal encoded
-        base58check     : Base58Check encoded
+    --output-format Output data format, can be any one of those used for
+                    --input-format
 
-    --input         Specify input data - can be raw data, private key, public or address
-    --input-file    Specify input file name
+    --input         Specify input data on command line
+    --input-file    Specify input file name.  File size must be exactly what
+                    is expected for the corresponding --input-type.
 
 ### Examples
 
@@ -93,7 +101,7 @@ Note that the WIF private key is longer with public key compression on, because 
 Show address for uncompressed WIF private key:
 ```
 $ ./bitcoin-tool \
-    --input-type private-key \
+    --input-type private-key-wif \
     --input-format base58check \
     --input 5JZjfs5wJv1gNkJXCmYpyj6VxciqPkwmK4yHW8zMmPN1PW7Hk7F \
     --output-type address \
@@ -105,7 +113,7 @@ $ ./bitcoin-tool \
 Show address for compressed WIF private key:
 ```
 $ ./bitcoin-tool \
-    --input-type private-key \
+    --input-type private-key-wif \
     --input-format base58check \
     --input KzXVLY4ni4yznz8LJwdUmNoGpUfebSxiakXRqcGAeuhihzaVe3Rz \
     --output-type address \
@@ -113,14 +121,20 @@ $ ./bitcoin-tool \
 
 1Lm2DPqbhsutDkKoK9ZPPUkDKnGxQfpJLW    
 ```
-This demonstrates why it is necessary to be careful when converting raw private keys to addresses; the same private key will (almost definitely) result in two seperate addresses, one for each intermediate form of the public key.
+This demonstrates why it is necessary to be careful when converting raw private
+keys to addresses; the same private key will (almost definitely) result in two
+seperate addresses, one for each intermediate form of the public key.
 
-Convert the WIF private key to a QR code so we can print it and import it easily later:
+Convert the WIF private key to a QR code so we can print it and import it
+easily later:
 ```
 $ qrencode -d 300 -s 3 -l H 5JZjfs5wJv1gNkJXCmYpyj6VxciqPkwmK4yHW8zMmPN1PW7Hk7F -o privkey.png
 ```
 
-Now you can receive Bitcoins using the address above, but you will need to import the private key at a later time in order to spend them. (`bitcoind importprivkey`, for the official client)
+Now you can receive Bitcoins using the address above, but you will need to
+import the private key into your wallet at a later time in order to spend them
+(`bitcoind importprivkey`, for the official client), or at least be able to
+sign transactions with that key (not necessarily online).
  
 #### Generate address from random private key
 ```
@@ -139,6 +153,10 @@ This outputs an address you can send Bitcoins to, if you want to loose them fore
 Hash a text phrase with SHA256, which is then used as the private key to generate an address from.
 
 **Never use this example for an actual wallet, it will be stolen almost immediately!** (I did a test with another dictionary word and it took all of 4 seconds for someone to steal it!)
+
+This shows the `--output-type all` option, which spews out lots of unnecessary
+garbage which I can't imagine would ever be useful, but it does so because it can.
+So There.
 ```
 ./bitcoin-tool \
     --input-type private-key \
@@ -147,10 +165,22 @@ Hash a text phrase with SHA256, which is then used as the private key to generat
     --public-key-compression uncompressed \
     --output-type all
 
-address-hex:000511096ab078473911e0222fcbc3375314e2bab1
-address-base58:1TnnhMEgic5g4ttrCQyDopwqTs4hheuNZ
-public-key-hex:04a32ed011213146495f58d3ed83a6cc3fc0fd107d5fa2887bbc2fcea81e8bc84f650e81f4ddc84424daab546945f0d7d9dfd4dce39ce3776ee6b8ba78e6eddc7a
-public-key-base58:3gKQTqtZhdBHDDe1echja7ac39tup3SnNSzwZSrnHb417QbL7T8JcTfW7GgEQsvhYrPqLsiraabne6xDrSGZ6bBB4S5YGM
-private-key-hex:30caae2fcb7c34ecadfddc45e0a27e9103bd7cfc87730d7818cc096b1266a683
-private-key-base58:5JBmuBc64pVrKLyDc8ktyXJmAeEwKQogn6jsk6taeq8zRMtGZrE
+address.hex:000511096ab078473911e0222fcbc3375314e2bab1
+address.base58:156T6Af12SKCQGbjEWNeTkADhJNk
+address.base58check:1TnnhMEgic5g4ttrCQyDopwqTs4hheuNZ
+public-key-ripemd160.hex:0511096ab078473911e0222fcbc3375314e2bab1
+public-key-ripemd160.base58:56T6Af12SKCQGbjEWNeTkADhJNk
+public-key-ripemd160.base58check:TnnhMEgic5g4ttrCQyDopwqTs4k6XbAK
+public-key-sha256.hex:b17978b7528353483429a758fb9ec833882a5ddbb27c1fc2bb4a66436f7e342f
+public-key-sha256.base58:CwnbNMmu9yCkXE32543pfPAgVSynE2wjGYv9Mip4yrb8
+public-key-sha256.base58check:2MAMBCve8eVyrbxxBzqn5HLNqqyc8CysKPdfaKPzA81mHxPvyu
+public-key.hex:04a32ed011213146495f58d3ed83a6cc3fc0fd107d5fa2887bbc2fcea81e8bc84f650e81f4ddc84424daab546945f0d7d9dfd4dce39ce3776ee6b8ba78e6eddc7a
+public-key.base58:QjfX2h4LdAA21NTa2K5dVcxcuQVTtvT3dL5JFLvxAMuCGKY3t8yCKNzJid8MHWbYmoHSRXAS9hggkhQUDiwaaGAV
+public-key.base58check:3gKQTqtZhdBHDDe1echja7ac39tup3SnNSzwZSrnHb417QbL7T8JcTfW7GgEQsvhYrPqLsiraabne6xDrSGZ6bBB4S5YGM
+private-key-wif.hex:8030caae2fcb7c34ecadfddc45e0a27e9103bd7cfc87730d7818cc096b1266a683
+private-key-wif.base58:f5g1GA5uH4gsfEU6ANnGCzoe1VZvnZ1mYh3frnVSPR1nJ
+private-key-wif.base58check:5JBmuBc64pVrKLyDc8ktyXJmAeEwKQogn6jsk6taeq8zRMtGZrE
+private-key.hex:30caae2fcb7c34ecadfddc45e0a27e9103bd7cfc87730d7818cc096b1266a683
+private-key.base58:4HTpd7gVSeVJDurhJKYGEYyFWMZRCNjSnXaEcan9K6Gz
+private-key.base58check:NVKW9zzMvs4LawZwJztUZdx3R27Gwc4Hg6WvqqQxHMFkbn3Wz
 ```

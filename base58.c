@@ -8,7 +8,7 @@
 #include <openssl/bn.h>
 
 BitcoinResult Bitcoin_EncodeBase58(
-	char *output, size_t *output_size,
+	char *output, size_t output_buffer_size, size_t *encoded_output_size,
 	const void *source, size_t source_size
 )
 {
@@ -39,7 +39,7 @@ BitcoinResult Bitcoin_EncodeBase58(
 	while (!BN_is_zero(&x) && !output_overflow) {
 		BN_div(&div_bn, &rem_bn, &x, &base_bn, bn_ctx);
 		BN_copy(&x, &div_bn);
-		if (output_count < *output_size) {
+		if (output_count < output_buffer_size) {
 			*d++ = digits[BN_get_word(&rem_bn)];
 			output_count++;
 		} else {
@@ -60,7 +60,7 @@ BitcoinResult Bitcoin_EncodeBase58(
 	/* reverse everything, so that it is most significant to least significant */
 	Bitcoin_ReverseBytes(output, d - output);
 
-	*output_size = d - output;
+	*encoded_output_size = d - output;
 
 	BN_CTX_free(bn_ctx);
 	BN_free(&x);
@@ -72,25 +72,29 @@ BitcoinResult Bitcoin_EncodeBase58(
 }
 
 BitcoinResult Bitcoin_EncodeBase58Check(
-	char *output, size_t *output_size,
+	char *output, size_t output_size, size_t *encoded_output_size,
 	const void *source, size_t source_size
 )
 {
 	struct BitcoinSHA256 checksum;
-	size_t inter_size = source_size + BITCOIN_BASE58CHECK_CHECKSUM_SIZE;
-	unsigned char *inter = alloca(inter_size);
+	size_t buffer_size = source_size + BITCOIN_BASE58CHECK_CHECKSUM_SIZE;
+	unsigned char *buffer = malloc(buffer_size);
+	BitcoinResult result = 0;
 
 	/* calc checksum bytes */
 	Bitcoin_DoubleSHA256(&checksum, source, source_size);
 
-	memcpy(inter, source, source_size);
-	memcpy(inter + source_size, &checksum, BITCOIN_BASE58CHECK_CHECKSUM_SIZE);
+	memcpy(buffer, source, source_size);
+	memcpy(buffer + source_size, &checksum, BITCOIN_BASE58CHECK_CHECKSUM_SIZE);
 
-	return Bitcoin_EncodeBase58(output, output_size, inter, inter_size);
+	result = Bitcoin_EncodeBase58(output, output_size, encoded_output_size, buffer, buffer_size);
+	free(buffer);
+
+	return result;
 }
 
-BitcoinResult Bitcoin_DecodeBase58Check(
-	void *output, size_t *output_size,
+BitcoinResult Bitcoin_DecodeBase58(
+	uint8_t *output, size_t output_buffer_size, size_t *decoded_output_size,
 	const void *input, size_t input_size
 )
 {
@@ -115,8 +119,6 @@ BitcoinResult Bitcoin_DecodeBase58Check(
 	unsigned leading_zeros = 0;
 	unsigned bn_bytes_req = 0;
 	unsigned bn_bytes_wrote = 0;
-	unsigned char buffer[256] = { 0 };
-	struct BitcoinSHA256 hash;
 
 	BIGNUM base, m1, m2, result, sub;
 	BN_CTX *bn_ctx;
@@ -155,13 +157,13 @@ BitcoinResult Bitcoin_DecodeBase58Check(
 
 	bn_bytes_req = BN_num_bytes(&result);
 
-	if (bn_bytes_req > sizeof(buffer)) {
+	if (bn_bytes_req > output_buffer_size) {
 		printf("%s: bn_bytes_req too large (%u)\n", __func__, bn_bytes_req);
 		/* output buffer too small, failure */
 		return BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL;
 	}
 
-	bn_bytes_wrote = BN_bn2bin(&result, buffer+leading_zeros);
+	bn_bytes_wrote = BN_bn2bin(&result, output+leading_zeros);
 	BN_CTX_free(bn_ctx);
 	BN_free(&base);
 	BN_free(&m1);
@@ -169,19 +171,37 @@ BitcoinResult Bitcoin_DecodeBase58Check(
 	BN_free(&result);
 	BN_free(&sub);
 
-	*output_size = bn_bytes_wrote+leading_zeros;
+	*decoded_output_size = bn_bytes_wrote+leading_zeros;
 
-	Bitcoin_DoubleSHA256(&hash, buffer, *output_size - BITCOIN_BASE58CHECK_CHECKSUM_SIZE);
+	return BITCOIN_SUCCESS;
+}
+
+BitcoinResult Bitcoin_DecodeBase58Check(
+	uint8_t *output, size_t output_buffer_size, size_t *decoded_output_size,
+	const void *input, size_t input_size
+)
+{
+	struct BitcoinSHA256 hash;
+	BitcoinResult result = Bitcoin_DecodeBase58(
+		output, output_buffer_size, decoded_output_size,
+		input, input_size
+	);
+
+	if (result != BITCOIN_SUCCESS) {
+		return result;
+	}
+
+	Bitcoin_DoubleSHA256(&hash, output, *decoded_output_size - BITCOIN_BASE58CHECK_CHECKSUM_SIZE);
 
 	if (memcmp(hash.data
-		,buffer + *output_size - BITCOIN_BASE58CHECK_CHECKSUM_SIZE
+		,output + *decoded_output_size - BITCOIN_BASE58CHECK_CHECKSUM_SIZE
 		,BITCOIN_BASE58CHECK_CHECKSUM_SIZE)
 	) {
 		/* checksums didn't match, failure */
 		return BITCOIN_ERROR_CHECKSUM_FAILURE;
 	}
 
-	memcpy(output, buffer, *output_size);
+	(*decoded_output_size) -= BITCOIN_BASE58CHECK_CHECKSUM_SIZE;
 
 	/* checksum matched, success */
 	return BITCOIN_SUCCESS;

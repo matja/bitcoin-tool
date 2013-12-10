@@ -11,10 +11,22 @@
 #include "result.h" /* BitcoinResult */
 #include "utility.h" /* uint_max2 */
 
-#define BITCOIN_TEXT_ADDRESS_MAX_SIZE BITCOIN_ADDRESS_SIZE
+ /* Define address prefix byte values, from:
+   https://en.bitcoin.it/wiki/List_of_address_prefixes
+*/
+#define BITCOIN_ADDRESS_PREFIX_BITCOIN_PUBKEY_HASH 0
+#define BITCOIN_ADDRESS_PREFIX_BITCOIN_SCRIPT_HASH 5
+#define BITCOIN_ADDRESS_PREFIX_TESTNET_PUBKEY_HASH 111
+#define BITCOIN_ADDRESS_PREFIX_BITCOIN_PRIVATE_KEY 128
+#define BITCOIN_ADDRESS_PREFIX_TESTNET_SCRIPT_HASH 196
+#define BITCOIN_ADDRESS_PREFIX_TESTNET_PRIVATE_KEY 239
+
+/* declare Bitcoin address format */
 
 #define BITCOIN_ADDRESS_VERSION_SIZE 1
 #define BITCOIN_ADDRESS_SIZE (BITCOIN_ADDRESS_VERSION_SIZE + BITCOIN_RIPEMD160_SIZE)
+#define BITCOIN_TEXT_ADDRESS_MAX_SIZE (BITCOIN_ADDRESS_SIZE)
+
 struct BitcoinAddress
 {
 	unsigned char data[BITCOIN_ADDRESS_SIZE];
@@ -24,10 +36,7 @@ struct BitcoinAddress
 
 #define BITCOIN_PUBLIC_KEY_COMPRESSED_SIZE 33
 #define BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE 65
-#define BITCOIN_PUBLIC_KEY_MAX_SIZE uint_max2( \
-	BITCOIN_PUBLIC_KEY_COMPRESSED_SIZE, \
-	BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE \
-)
+#define BITCOIN_PUBLIC_KEY_MAX_SIZE (BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE)
 
 enum BitcoinPublicKeyCompression {
 	BITCOIN_PUBLIC_KEY_EMPTY,
@@ -41,10 +50,27 @@ struct BitcoinPublicKey
 	enum BitcoinPublicKeyCompression compression;
 };
 
-/* elliptic curve private key declarations */
-
+/* private key defines */
 #define BITCOIN_PRIVATE_KEY_SIZE 32
 
+/* WIF keys have a version byte at the start */
+#define BITCOIN_PRIVATE_KEY_WIF_VERSION_SIZE 1
+
+/* WIF keys for generating compressed public keys have a compression flag
+which comes directly after the private key.  */
+#define BITCOIN_PRIVATE_KEY_WIF_COMPRESSION_FLAG_SIZE 1
+#define BITCOIN_PRIVATE_KEY_WIF_COMPRESSION_FLAG_COMPRESSED 1
+
+/* WIF sizes (not including base58check checksum, we treat that seperately) */
+#define BITCOIN_PRIVATE_KEY_WIF_UNCOMPRESSED_SIZE ( \
+	BITCOIN_PRIVATE_KEY_SIZE + \
+	BITCOIN_PRIVATE_KEY_WIF_VERSION_SIZE \
+)
+#define BITCOIN_PRIVATE_KEY_WIF_COMPRESSED_SIZE ( \
+	BITCOIN_PRIVATE_KEY_SIZE + \
+	BITCOIN_PRIVATE_KEY_WIF_VERSION_SIZE + \
+	BITCOIN_PRIVATE_KEY_WIF_COMPRESSION_FLAG_SIZE \
+)
 
 struct BitcoinPrivateKey
 {
@@ -80,6 +106,23 @@ int BitcoinPublicKey_Empty(const struct BitcoinPublicKey *public_key);
  *  @return size of public key in bytes, or 0 if failure.
  */
 size_t BitcoinPublicKey_GetSize(const struct BitcoinPublicKey *public_key);
+
+/** @brief Return the size of a private key, in bytes.
+ *
+ *  @param private_key[input] Pointer to private key to read.
+ *
+ *  @return size of private key in bytes, or 0 if failure.
+ */
+size_t BitcoinPrivateKey_GetSize(const struct BitcoinPrivateKey *private_key);
+
+
+/** @brief Return the size of a private key in Wallet Inport Format, in bytes.
+ *
+ *  @param private_key[input] Pointer to private key to read.
+ *
+ *  @return size of private key in bytes, or 0 if failure.
+ */
+size_t BitcoinPrivateKey_GetWIFSize(const struct BitcoinPrivateKey *private_key);
 
 /** @brief Convert a private key to a public key.
  *

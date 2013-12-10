@@ -30,8 +30,33 @@ int Bitcoin_DecodeHexChar(uint_fast8_t *output, char c);
 
  *  @return BITCOIN_SUCCESS if chars were valid.
  */
-BitcoinResult Bitcoin_DecodeHex(void *output, size_t output_size,
+BitcoinResult Bitcoin_DecodeHex(
+	void *output, size_t output_size,
+	size_t *decoded_output_size,
 	const char *source, size_t source_size
+);
+
+/** @brief Convert multiple bytes of data to ASCII hex digits.
+ *
+ *  @param[out] output Buffer to write encoded values to.
+ *  @param[in] output_size Size of buffer to write encoded values to.
+ *                     No more than output_size bytes will be written.
+ *  @param[out] encoded_output_size Number of characters written to output
+                                    buffer.  This will be twice the number of
+                                    input bytes unless a buffer overrun
+                                    occurs.
+ *  @param[in] source Pointer to raw data.
+ *  @param[in] source_size Number of bytes of raw data.
+ *  @param[in] lower_case Non-zero if output is to be lower-case, otherwise
+                          output will be upper-case.
+
+ *  @return BITCOIN_SUCCESS if all the input data was encoded.
+ */
+BitcoinResult Bitcoin_EncodeHex(
+	char *output, size_t output_size,
+	size_t *encoded_output_size,
+	const void *source, size_t source_size,
+	int lower_case	
 );
 
 /** @brief Output the hex representation of a pointer to byte values,
@@ -57,14 +82,5 @@ void Bitcoin_OutputHexPretty(const void *source, size_t source_size);
  *  @param[in] size Number of bytes to reverse.
  */
 void Bitcoin_ReverseBytes(void *buffer, size_t size);
-
-/** @brief Return maximum value of two unsigned inputs.
- *
- *  @param[in] a 1st value.
- *  @param[in] b 2nd value.
-
- *  @return largest value
- */
-unsigned uint_max2(unsigned a, unsigned b);
 
 #endif

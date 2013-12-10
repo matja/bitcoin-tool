@@ -20,6 +20,7 @@
  */
 
 #include <stdlib.h> /* size_t */
+#include <stdint.h> /* uint8_t */
 
 #include "result.h" /* BitcoinResult / BITCOIN_SUCCESS / BITCOIN_ERROR_* */
 
@@ -41,7 +42,7 @@
  *          BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL if output buffer too small.
  */
 BitcoinResult Bitcoin_EncodeBase58(
-	char *output, size_t *output_size,
+	char *output, size_t output_size, size_t *encoded_output_size,
 	const void *source, size_t source_size
 );
 
@@ -60,8 +61,32 @@ BitcoinResult Bitcoin_EncodeBase58(
  *          BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL if output buffer too small.
  */
 BitcoinResult Bitcoin_EncodeBase58Check(
-	char *output, size_t *output_size,
+	char *output, size_t output_size, size_t *encoded_output_size,
 	const void *source, size_t source_size
+);
+
+/** @brief Convert a Base58 string to its binary representation.
+ *         Base58 (non-check) has no checksum to check, so be careful of
+ *         passing incorrect input - errors will not be found.
+ *         The output buffer will be modified even if the input cannot be
+ *         decoded correctly.
+ *
+ *  @param[out] output Pointer to write decoded output into.
+ *  @param[out] output_buffer_size Size in bytes of the output buffer.
+ *              This specifies the maximum number of bytes to be output.
+ *  @param[out] decoded_output_size Size in bytes of the decoded output.
+ *              This can be 0 for empty input, or error condition, up to the
+ *              maximum specified in output_buffer_size.
+ *  @param[in] source Pointer to Base58 string to read.
+ *  @param[in] source_size Number of characters to read from 'source'.
+ *
+ *  @return BitcoinResult indicating error state :
+ *          BITCOIN_SUCCESS if success.
+ *          BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL if output buffer too small.
+ */
+BitcoinResult Bitcoin_DecodeBase58(
+	uint8_t *output, size_t output_buffer_size, size_t *decoded_output_size,
+	const void *input, size_t input_size
 );
 
 /** @brief Convert a Base58Check string to its binary representation.
@@ -69,10 +94,11 @@ BitcoinResult Bitcoin_EncodeBase58Check(
  *         The output buffer will be modified even if the checksum failed.
  *
  *  @param[out] output Pointer to write decoded output into.
- *  @param[out] output_size Pointer to size of output buffer.  No more bytes
- *              than the number pointed to by 'output_size' will be written to
- *              'output'.  The number of bytes actually decoded will be written
- *              to the contents pointed to by 'output_size'.
+ *  @param[out] output_buffer_size Size in bytes of the output buffer.
+ *              This specifies the maximum number of bytes to be output.
+ *  @param[out] decoded_output_size Size in bytes of the decoded output.
+ *              This can be 0 for empty input, or error condition, up to the
+ *              maximum specified in output_buffer_size.
  *  @param[in] source Pointer to Base58Check string to read.
  *  @param[in] source_size Number of characters to read from 'source'.
  *
@@ -82,7 +108,7 @@ BitcoinResult Bitcoin_EncodeBase58Check(
  *          BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL if output buffer too small.
  */
 BitcoinResult Bitcoin_DecodeBase58Check(
-	void *output, size_t *output_size,
+	uint8_t *output, size_t output_buffer_size, size_t *decoded_output_size,
 	const void *input, size_t input_size
 );
 

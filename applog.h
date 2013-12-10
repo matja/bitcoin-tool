@@ -7,7 +7,8 @@ enum ApplogLevel {
 	APPLOG_NOTICE,
 	APPLOG_WARNING,
 	APPLOG_ERROR,
-	APPLOG_FATAL
+	APPLOG_FATAL,
+	APPLOG_BUG
 };
 
 void applog(enum ApplogLevel level,

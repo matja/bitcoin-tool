@@ -12,6 +12,7 @@ const char *Bitcoin_ResultString(BitcoinResult result)
 		case BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL: m = "output buffer too small"; break;
 		case BITCOIN_ERROR_CHECKSUM_FAILURE: m = "checksum failure"; break;
 		case BITCOIN_ERROR_INVALID_FORMAT: m = "invalid format"; break;		
+		case BITCOIN_ERROR_IMPOSSIBLE_CONVERSION: m = "impossible conversion from input type to output type"; break;		
 		default : m = "unknown result code"; break;
 	}
 	return m;

@@ -22,15 +22,39 @@ size_t BitcoinPublicKey_GetSize(const struct BitcoinPublicKey *public_key)
 {
 	switch (public_key->compression) {
 		case BITCOIN_PUBLIC_KEY_COMPRESSED :
-			return 33;
+			return BITCOIN_PUBLIC_KEY_COMPRESSED_SIZE;
 			break;
 		case BITCOIN_PUBLIC_KEY_UNCOMPRESSED :
-			return 65;
+			return BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE;
 			break;
 		default :
 			fprintf(stderr, "%s: invalid public_key->compression value (%u)\n",
 				__func__,
 				(unsigned)public_key->compression
+			);
+			break;
+	}
+	return 0;
+}
+
+size_t BitcoinPrivateKey_GetSize(const struct BitcoinPrivateKey *private_key)
+{
+	return BITCOIN_PRIVATE_KEY_SIZE;
+}
+
+size_t BitcoinPrivateKey_GetWIFSize(const struct BitcoinPrivateKey *private_key)
+{
+	switch (private_key->public_key_compression) {
+		case BITCOIN_PUBLIC_KEY_COMPRESSED :
+			return BITCOIN_PRIVATE_KEY_WIF_COMPRESSED_SIZE;
+			break;
+		case BITCOIN_PUBLIC_KEY_UNCOMPRESSED :
+			return BITCOIN_PRIVATE_KEY_WIF_UNCOMPRESSED_SIZE;
+			break;
+		default :
+			applog(APPLOG_ERROR, __func__,
+				"invalid private_key->public_key_compression value (%u)",
+				(unsigned)private_key->public_key_compression
 			);
 			break;
 	}
@@ -128,135 +152,4 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 	return BITCOIN_SUCCESS;
 }
 
-BitcoinResult Bitcoin_MakeAddressFromPublicKey(
-	struct BitcoinAddress *address,
-	const struct BitcoinPublicKey *public_key
-)
-{
-	struct BitcoinSHA256 public_key_hash1;
-	struct BitcoinRIPEMD160 public_key_hash2;
-
-	/* hash public key to make address */
-	Bitcoin_SHA256(&public_key_hash1, public_key->data, BitcoinPublicKey_GetSize(public_key));
-	Bitcoin_RIPEMD160(&public_key_hash2, public_key_hash1.data, BITCOIN_SHA256_SIZE);
-
-	/* add version byte */
-	memcpy(address->data+1, public_key_hash2.data, BITCOIN_RIPEMD160_SIZE);
-	address->data[0] = 0;
-
-	return BITCOIN_SUCCESS;
-}
-
-BitcoinResult Bitcoin_LoadPrivateKeyFromBase58(
-	struct BitcoinPrivateKey *output_private_key,
-	const char *input_text, size_t input_size
-)
-{
-	char buffer[256];
-	size_t size = sizeof(buffer);
-
-	int error = Bitcoin_DecodeBase58Check(
-		buffer
-		,&size
-		,input_text
-		,input_size
-	);
-
-	if (error) {
-		return error;
-	}
-
-	if (size == 0) {
-		return BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT;
-	}
-
-	if (buffer[0] == '\x80') {
-		if (size == 37) {
-			/* uncompressed private key -
-				1 byte version
-				32 bytes private key
-				4 bytes checksum
-			*/
-			memcpy(output_private_key->data, buffer+1, BITCOIN_PRIVATE_KEY_SIZE);
-			output_private_key->public_key_compression = BITCOIN_PUBLIC_KEY_UNCOMPRESSED;
-			return BITCOIN_SUCCESS;
-		} else if (size == 38) {
-			/* compressed private key -
-				1 byte version
-				32 bytes private key
-				1 byte compression type
-				4 bytes checksum
-			*/
-			unsigned compression_type = buffer[BITCOIN_PRIVATE_KEY_SIZE+1];
-
-			if (compression_type != 1) {
-				/* compression type must be 1 */
-				fprintf(stderr,
-					"%s: compression type was 0x%02x when it should have been 0x01",
-					__func__,
-					(unsigned)compression_type
-				);
-				return BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT;
-			}
-			memcpy(output_private_key->data, buffer+1, BITCOIN_PRIVATE_KEY_SIZE);
-			output_private_key->public_key_compression = BITCOIN_PUBLIC_KEY_COMPRESSED;
-			return BITCOIN_SUCCESS;
-		}
-	}
-
-	return BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT;
-}
-
-
-BitcoinResult Bitcoin_LoadPublicKeyFromBase58(
-	struct BitcoinPublicKey *output_public_key,
-	const char *input_text, size_t input_size
-)
-{
-/*
-not implemented - is this useful for anything?
-*/
-	return BITCOIN_ERROR_NOT_IMPLEMENTED;
-}
-
-BitcoinResult Bitcoin_LoadPublicKeyFromHex(
-	struct BitcoinPublicKey *output_public_key,
-	const char *input_text, size_t input_size
-)
-{
-/*
-useful for converting hex dumps of transactions into addresses.
-*/
-	uint8_t buffer[BITCOIN_PUBLIC_KEY_MAX_SIZE];
-	int error;
-
-	if (input_size & 1) {
-		/* need a whole number of bytes */
-		return BITCOIN_ERROR_PUBLIC_KEY_INVALID_FORMAT;
-	}
-
-	switch (input_size/2) {
-		case BITCOIN_PUBLIC_KEY_COMPRESSED_SIZE :
-			output_public_key->compression = BITCOIN_PUBLIC_KEY_COMPRESSED;
-			break;
-		case BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE :
-			output_public_key->compression = BITCOIN_PUBLIC_KEY_COMPRESSED;
-			break;
-		default :
-			/* invalid length */
-			return BITCOIN_ERROR_PUBLIC_KEY_INVALID_FORMAT;
-			break;
- 	}
-
-	error = Bitcoin_DecodeHex(output_public_key->data, 
-		sizeof(output_public_key->data),
-		input_text, input_size
-	);
-
-	if (error) {
-		return error;
-	}
-
-	return BITCOIN_SUCCESS;
-}
 

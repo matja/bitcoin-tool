@@ -1,4 +1,4 @@
-CFLAGS = -O0 -ansi -pedantic -Wall
+CFLAGS = -ansi -pedantic -Wall -ggdb -O2 
 LIBS = -lrt
 
 OBJECTS = main.o ec.o hash.o utility.o base58.o result.o applog.o
@@ -12,4 +12,3 @@ clean :
 
 bitcoin-tool : $(OBJECTS)
 	$(CC) -o $@ $^ -lcrypto
-
