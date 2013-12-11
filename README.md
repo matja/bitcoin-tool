@@ -75,7 +75,7 @@ $ ./bitcoin-tool \
     --input-type private-key \
     --input-format raw \
     --input-file key.bin \
-    --output-type private-key \
+    --output-type private-key-wif \
     --output-format base58check \
     --public-key-compression uncompressed
 
@@ -89,7 +89,7 @@ $ ./bitcoin-tool \
     --input-type private-key \
     --input-format raw \
     --input-file key.bin \
-    --output-type private-key \
+    --output-type private-key-wif \
     --output-format base58check \
     --public-key-compression compressed
 
