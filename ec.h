@@ -72,6 +72,11 @@ which comes directly after the private key.  */
 	BITCOIN_PRIVATE_KEY_WIF_COMPRESSION_FLAG_SIZE \
 )
 
+/* Mini private key format, as used in Casascius physical bitcoins.
+   Described here : https://en.bitcoin.it/wiki/Mini_private_key_format
+*/
+#define BITCOIN_MINI_PRIVATE_KEY_SIZE 30
+
 struct BitcoinPrivateKey
 {
 	unsigned char data[BITCOIN_PRIVATE_KEY_SIZE];

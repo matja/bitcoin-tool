@@ -28,7 +28,8 @@ struct BitcoinToolOptions {
 		INPUT_TYPE_PUBLIC_KEY_SHA256,
 		INPUT_TYPE_PUBLIC_KEY,
 		INPUT_TYPE_PRIVATE_KEY_WIF,
-		INPUT_TYPE_PRIVATE_KEY
+		INPUT_TYPE_PRIVATE_KEY,
+		INPUT_TYPE_MINI_PRIVATE_KEY
 	} input_type;
 
 	enum InputFormat {
@@ -68,11 +69,21 @@ struct BitcoinToolOptions {
 struct BitcoinTool {
 	struct BitcoinToolOptions options;
 
+	char mini_private_key[BITCOIN_MINI_PRIVATE_KEY_SIZE];
 	struct BitcoinPrivateKey private_key;
 	struct BitcoinPublicKey public_key;
 	struct BitcoinSHA256 public_key_sha256;
 	struct BitcoinRIPEMD160 public_key_ripemd160;
 	struct BitcoinAddress address;
+
+	/* flag the input types as being set if we load or convert into them */
+	int mini_private_key_set,
+		private_key_set,
+		private_key_wif_set,
+		public_key_set,
+		public_key_sha256_set,
+		public_key_ripemd160_set,
+		address_set;
 
 	char input[256]; /* input provided by user on command line or from file */
 	size_t input_size;
@@ -85,13 +96,6 @@ struct BitcoinTool {
 
 	char output_text[256]; /* raw output type converted to output format */
 	size_t output_text_size;
-
-	int private_key_set,
-		private_key_wif_set,
-		public_key_set,
-		public_key_sha256_set,
-		public_key_ripemd160_set,
-		address_set;
 
 	int (*parseOptions)(struct BitcoinTool *self, int argc, char *argv[]);
 	void (*help)(struct BitcoinTool *self);
@@ -205,6 +209,8 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 				o->input_type = INPUT_TYPE_PRIVATE_KEY_WIF;
 			} else if (!strcmp(v, "private-key")) {
 				o->input_type = INPUT_TYPE_PRIVATE_KEY;
+			} else if (!strcmp(v, "mini-private-key")) {
+				o->input_type = INPUT_TYPE_MINI_PRIVATE_KEY;				
 			} else {
 				applog(APPLOG_ERROR, __func__,
 					"unknown value \"%s\" for --input-type", v
@@ -383,6 +389,16 @@ BitcoinResult Bitcoin_MakePrivateKeyFromPrivateKeyWIF(
 	return BITCOIN_SUCCESS;
 }
 
+
+BitcoinResult Bitcoin_MakePrivateKeyWIFFromMiniPrivateKey(
+
+)
+{
+
+	return BITCOIN_SUCCESS;
+}
+
+
 BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 {
 	/* Convert from the input type to the output type.
@@ -398,6 +414,25 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 	BitcoinResult result;
 
 	switch (self->options.input_type) {
+		case INPUT_TYPE_MINI_PRIVATE_KEY :
+			switch (self->options.output_type) {
+				case OUTPUT_TYPE_ALL :
+				case OUTPUT_TYPE_ADDRESS :
+				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
+				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
+				case OUTPUT_TYPE_PUBLIC_KEY :
+				case OUTPUT_TYPE_PRIVATE_KEY_WIF :
+					result = Bitcoin_MakePrivateKeyWIFFromMiniPrivateKey(
+						&self->mini_private_key
+					);
+					if (result != BITCOIN_SUCCESS) {
+						return result;
+					}
+					self->mini_private_key_set = 1;
+					break;
+				default :
+					break;
+			}		
 		case INPUT_TYPE_PRIVATE_KEY :
 			switch (self->options.output_type) {
 				case OUTPUT_TYPE_ALL :
@@ -667,6 +702,49 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 
 	/* check the size of the input matches what we expect for its type */
 	switch (self->options.input_type) {
+		case INPUT_TYPE_MINI_PRIVATE_KEY : {
+			size_t expected_size = BITCOIN_MINI_PRIVATE_KEY_SIZE;
+			char test_buffer[BITCOIN_MINI_PRIVATE_KEY_SIZE + 1];
+			struct BitcoinSHA256 hash;
+
+			if (input_raw_size != expected_size) {
+				const char *extra_message = "";
+				applog(APPLOG_ERROR, __func__,
+					"invalid size input for mini private key:"
+					" expected %u bytes but got %u bytes",
+					(unsigned)expected_size,
+					(unsigned)input_raw_size,
+					extra_message
+				);
+				return BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT;
+			}
+
+			/* prepare a test buffer, to check that the key is valid */
+			memcpy(test_buffer, input_raw, input_raw_size);
+			test_buffer[input_raw_size] = '?';
+			Bitcoin_SHA256(&hash, test_buffer, BITCOIN_MINI_PRIVATE_KEY_SIZE + 1);
+			if (hash.data[0] != 0) {
+				applog(APPLOG_ERROR, __func__,
+					"mini private key invalid: SHA256(key + '?')[0] results in"
+					" 0x%02x when the expected value is 0x00.  Check the key"
+					" for typing errors and try again.",
+					(unsigned)hash.data[0]
+				);
+				return BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT;
+			}
+
+			/* 1/256 chance the key is valid, hash the string into the real
+			   private key. */
+			Bitcoin_SHA256(&hash, input_raw, BITCOIN_MINI_PRIVATE_KEY_SIZE);
+			memcpy(self->private_key.data, hash.data, BITCOIN_SHA256_SIZE);
+			self->private_key_set = 1;
+
+			/* since the comression type is always uncompressed, we can set
+			   that to, and we can produce a valid WIF key */
+			self->private_key.public_key_compression = BITCOIN_PUBLIC_KEY_UNCOMPRESSED;
+			self->private_key_wif_set = 1;
+			break;
+		}		
 		case INPUT_TYPE_PRIVATE_KEY : {
 			size_t expected_size = BITCOIN_PRIVATE_KEY_SIZE;
 			if (input_raw_size != expected_size) {

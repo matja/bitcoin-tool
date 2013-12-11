@@ -3,6 +3,7 @@
 BITCOIN_TOOL="./bitcoin-tool"
 
 check () {
+	echo check $1
 	if [ "$2" != "$3" ];then
 		echo "failed test $1"
 		echo "output   : [$2]"
@@ -12,12 +13,14 @@ check () {
 }
 
 # -----------------------------------------------------------------------------
-TEST="1"
-EXPECTED="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+TEST="1 - convert Casascius mini private key format to address"
+NOTE="from example at https://en.bitcoin.it/wiki/Mini_private_key_format"
+EXPECTED="1CciesT23BNionJeXrbxmjc7ywfiyM4oLW"
+INPUT="S6c56bnXQiBjk9mqSYE7ykVQ7NzrRy"
 OUTPUT=$($BITCOIN_TOOL \
-	--input-type public-key-rmd \
-	--input-format hex \
-	--input 62E907B15CBF27D5425399EBF6F0FB50EBB88F18 \
+	--input-type mini-private-key \
+	--input-format raw \
+	--input "${INPUT}" \
 	--output-type address \
 	--output-format base58check )
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
@@ -109,6 +112,5 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-type public-key-rmd \
 	--output-format hex )
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
-# -----------------------------------------------------------------------------
 
 echo "all tests passed"
