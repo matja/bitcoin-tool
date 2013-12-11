@@ -112,45 +112,44 @@ static void BitcoinTool_help(BitcoinTool *self)
 		"\n"
 	);
 	fprintf(file,
-		"  --input-type    Input data type, can be one of :\n"
-		"                   mini-private-key : Casascius mini private key\n"
-		"                   private-key      : ECDSA private key\n"
-		"                   public-key       : ECDSA public key\n"
-		"                   public-key-sha   : SHA256(public key)\n"
-		"                   public-key-rmd   : RIPEMD160(SHA256(public key))\n"
-		"                   address          : Bitcoin address (version + hash)\n"
+		"  --input-type : Input data type, can be one of :\n"
+		"                 mini-private-key : 30 character Casascius mini private key\n"
+		"                 private-key      : 32 byte ECDSA private key\n"
+		"                 private-key-wif  : 33/34 byte ECDSA WIF private key\n"
 	);
 	fprintf(file,
-		"  --input-format  Input data format, can be one of :\n"
-		"                   raw             : raw binary data\n"
-		"                   hex             : hexadecimal encoded\n"
-		"                   base58check     : Base58Check encoded\n"
+		"                 public-key       : 33/65 byte ECDSA public key\n"
+		"                 public-key-sha   : 32 byte SHA256(public key) hash\n"
+		"                 public-key-rmd   : 20 byte RIPEMD160(SHA256(public key)) hash\n"
+		"                 address          : 21 byte Bitcoin address (prefix + hash)\n"
 	);
 	fprintf(file,
-		"  --output-type   Output data type, can be one of :\n"
-		"                   private-key     : ECDSA private key\n"
-		"                   public-key      : ECDSA public key\n"
-		"                   public-key-sha  : SHA256(public key)\n"
-		"                   public-key-rmd  : RIPEMD160(SHA256(public key))\n"
-		"                   address         : Bitcoin address (version + hash)\n"
-		"                   all             : all output types as type:value\n"
+		"  --input-format : Input data format, can be one of :\n"
+		"                   raw         : raw unprocessed data\n"
+		"                   hex         : hexadecimal encoded\n"
+		"                   base58      : Base58 encoded\n"
+		"                   base58check : Base58Check encoded\n"
 	);
 	fprintf(file,
-		"  --output-format Output data format, can be one of :\n"
-		"                   raw             : raw binary data\n"
-		"                   hex             : hexadecimal encoded\n"
-		"                   base58check     : Base58Check encoded\n"
+		"  --output-type  : Output data type, can be any one of those used for\n"
+		"                   --input-type, or additionally :\n"
+		"                   all : all output types, as type:value pairs, most of which\n"
+		"                        are never used, probably for good reason.\n"
 	);
 	fprintf(file,
-		"  --input         Specify input data\n"
-		"  --input-file    Specify input file name\n"
+		"  --output-format : Output data format, can be any one of those\n"
+		"                    used for --input-format\n"
 	);
 	fprintf(file,
-		"  --public-key-compression : can be one of :\n"
+		"  --input         : Specify input data on command line\n"
+		"  --input-file    : Specify file name to read for input\n"
+	);
+	fprintf(file,
+		"  --public-key-compression : Can be one of :\n"
 		"      auto         : determine compression from base58 private key (default)\n"
 		"      compressed   : force compressed public key\n"
 		"      uncompressed : force uncompressed public key\n"
-		"    (must be compressed/uncompressed for raw/hex keys, should be auto for base58)\n"
+		"    (must be specified for raw/hex keys, should be auto for base58)\n"
 	);
 	fprintf(file,
 		"\n"
