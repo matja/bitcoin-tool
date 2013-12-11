@@ -155,7 +155,7 @@ static void BitcoinTool_help(BitcoinTool *self)
 	);
 	fprintf(file,
 		"  Show address for specified WIF private key\n"
-		"    --input-type private-key \\\n"
+		"    --input-type private-key-wif \\\n"
 		"    --input-format base58check \\\n"
 		"    --input 5J2YUwNA5hmZFW33nbUCp5TmvszYXxVYthqDv7axSisBjFJMqaT \\\n"
 		"    --output-type address \\\n"
@@ -361,7 +361,7 @@ void Bitcoin_MakeRIPEMD160FromSHA256(
 	Bitcoin_RIPEMD160(output_hash, &input_hash->data, BITCOIN_SHA256_SIZE);
 }
 
-void Bitcoin_MakeSHA256FromPublicKey(	
+void Bitcoin_MakeSHA256FromPublicKey(
 	struct BitcoinSHA256 *output_hash,
 	const struct BitcoinPublicKey *public_key
 )
@@ -529,7 +529,7 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 					break;
 				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 					Bitcoin_MakeRIPEMD160FromAddress(&self->public_key_ripemd160, &self->address);
-					self->public_key_ripemd160_set = 1;					
+					self->public_key_ripemd160_set = 1;
 					return BITCOIN_SUCCESS;
 					break;				
 				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
@@ -596,7 +596,7 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 	if (self->input_size == 0) {
 		applog(APPLOG_ERROR, __func__,
 			"no input data specified, use --input or --input-file to specify input data"
-		);		
+		);
 		return 0;
 	}
 
@@ -626,14 +626,14 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 			BitcoinResult result = Bitcoin_DecodeBase58(
 				self->input_raw, sizeof(self->input_raw), &self->input_raw_size,
 				self->input, self->input_size
-			);		
+			);
 			if (result != BITCOIN_SUCCESS) {
 				applog(APPLOG_ERROR, __func__,
 					"failed to decode base58 input (%s)",
 					Bitcoin_ResultString(result)
 				);
 				return BITCOIN_ERROR_INVALID_FORMAT;
-			}			
+			}
 			break;
 		}		
 		case INPUT_FORMAT_BASE58CHECK : {
@@ -647,7 +647,7 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 					Bitcoin_ResultString(result)
 				);
 				return BITCOIN_ERROR_INVALID_FORMAT;
-			}		
+			}
 			break;
 		}
 		default :
@@ -782,7 +782,7 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 			assert(sizeof(self->public_key_ripemd160.data) >= BITCOIN_RIPEMD160_SIZE);
 			assert(input_raw_size >= BITCOIN_RIPEMD160_SIZE);
 			memcpy(self->public_key_ripemd160.data, input_raw, BITCOIN_RIPEMD160_SIZE);
-			self->public_key_ripemd160_set = 1;		
+			self->public_key_ripemd160_set = 1;
 			break;
 		}
 		case INPUT_TYPE_ADDRESS : {
@@ -880,7 +880,7 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 	switch (self->options.output_type) {
 		case OUTPUT_TYPE_ADDRESS :
 			output_raw_size = BITCOIN_ADDRESS_SIZE;
-			assert(sizeof(self->output_raw) >= output_raw_size);			
+			assert(sizeof(self->output_raw) >= output_raw_size);
 			memcpy(self->output_raw, self->address.data, output_raw_size);
 			break;
 		case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
@@ -908,7 +908,7 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 					/* set compression flag */
 					self->output_raw[
 						BITCOIN_PRIVATE_KEY_WIF_VERSION_SIZE +
-						BITCOIN_PRIVATE_KEY_SIZE						
+						BITCOIN_PRIVATE_KEY_SIZE
 					] = BITCOIN_PRIVATE_KEY_WIF_COMPRESSION_FLAG_COMPRESSED;
 					output_raw_size = BITCOIN_PRIVATE_KEY_WIF_VERSION_SIZE +
 						BITCOIN_PRIVATE_KEY_SIZE +
@@ -1070,7 +1070,7 @@ int main(int argc, char *argv[])
 	int result = 0;
 
 	if (!bat->parseOptions(bat, argc, argv)) {
-		bat->destroy(bat);		
+		bat->destroy(bat);
 		return EXIT_FAILURE;
 	}
 	result = bat->run(bat);
