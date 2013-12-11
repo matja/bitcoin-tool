@@ -83,7 +83,7 @@ struct BitcoinPrivateKey
 /*
 a private key is never actually compressed, this flag just indicates wether
 to generate a compressed or uncompressed public key from this private key.
-*/	
+*/
 	enum BitcoinPublicKeyCompression public_key_compression;
 };
 
@@ -98,7 +98,7 @@ int BitcoinPublicKey_Empty(const struct BitcoinPublicKey *public_key);
  *         Compressed keys are 33 bytes, which are composed of a byte
  *         indicating the sign of the y coordinate of the point on the curve,
  *         followed by 32 bytes of the x coordinate.
- *          
+ *
  *         Uncompressed keys are 65 bytes, which are composed of 0x04 byte
  *         followed by 32 bytes of the x coordinate, then 32 bytes of the
  *         y coordinate of the point on the curve.

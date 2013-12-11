@@ -35,7 +35,7 @@ void applog(enum ApplogLevel level, const char *function_name, const char *forma
 		}
 		case STRING : {
 			vfprintf(file, format, args);
-			fprintf(file, "\n");			
+			fprintf(file, "\n");
 			break;
 		}
 		default :

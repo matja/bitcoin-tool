@@ -209,7 +209,7 @@ void sha256_update(sha256_context *ctx, const void *input, size_t length)
 		length -= fill;
 		input_bytes  += fill;
 		left = 0;
-	}	
+	}
 
 	while( length >= 64 )
 	{

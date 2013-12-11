@@ -9,7 +9,7 @@
 
 #include <stdlib.h> /* size_t type */
 #include <stdint.h> /* uint* types */
- #include "result.h"
+#include "result.h"
 
 /** @brief Convert ASCII hex digit to its value.
  *
@@ -56,7 +56,7 @@ BitcoinResult Bitcoin_EncodeHex(
 	char *output, size_t output_size,
 	size_t *encoded_output_size,
 	const void *source, size_t source_size,
-	int lower_case	
+	int lower_case
 );
 
 /** @brief Output the hex representation of a pointer to byte values,
@@ -84,3 +84,4 @@ void Bitcoin_OutputHexPretty(const void *source, size_t source_size);
 void Bitcoin_ReverseBytes(void *buffer, size_t size);
 
 #endif
+

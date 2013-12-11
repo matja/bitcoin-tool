@@ -57,3 +57,4 @@ void Bitcoin_RIPEMD160(struct BitcoinRIPEMD160 *output,
 );
 
 #endif
+

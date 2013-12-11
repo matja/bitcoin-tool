@@ -27,3 +27,4 @@ void Bitcoin_RIPEMD160(struct BitcoinRIPEMD160 *output, const void *input, size_
 	RIPEMD160_Update(&ctx, input, size);
 	RIPEMD160_Final(output->data, &ctx);
 }
+

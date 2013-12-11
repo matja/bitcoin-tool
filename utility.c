@@ -121,3 +121,4 @@ void Bitcoin_ReverseBytes(void *buffer, size_t size)
 		last--;
 	}
 }
+

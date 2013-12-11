@@ -28,3 +28,4 @@ typedef enum BitcoinResult {
 const char *Bitcoin_ResultString(BitcoinResult result);
 
 #endif
+
