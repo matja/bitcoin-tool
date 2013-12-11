@@ -1,7 +1,5 @@
 #!/bin/sh
 
-set -x
-
 BITCOIN_TOOL="./bitcoin-tool"
 
 check () {
