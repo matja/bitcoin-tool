@@ -85,6 +85,7 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 			applog(APPLOG_ERROR, __func__,
 				"public key compression is not specified, please set using --public-key-compression compressed/uncompressed"
 			);
+			EC_KEY_free(key);
 			return BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT;
 			break;
 	}
@@ -96,11 +97,13 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 	ctx = BN_CTX_new();
 	if (!ctx) {
 		fprintf(stderr, "%s: BN_CTX_new failed\n", __func__);
+		EC_KEY_free(key);
 		return BITCOIN_ERROR_PUBLIC_KEY_INVALID_FORMAT;
 	}
 
 	if (!EC_POINT_mul(group, ec_public, &private_key_bn, NULL, NULL, ctx)) {
 		fprintf(stderr, "%s: EC_POINT_mul failed\n", __func__);
+		EC_KEY_free(key);
 		return BITCOIN_ERROR_PUBLIC_KEY_INVALID_FORMAT;
 	}
 
@@ -126,8 +129,9 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 			(unsigned)expected_public_key_size
 		);
 		BN_free(&private_key_bn);
+		EC_KEY_free(key);
 		return BITCOIN_ERROR_PUBLIC_KEY_INVALID_FORMAT;
-	}	
+	}
 
 	size2 = i2o_ECPublicKey(key, &public_key_ptr);
 	if (size2 != expected_public_key_size) {
@@ -135,8 +139,9 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 			__func__,
 			(unsigned)size,
 			(unsigned)expected_public_key_size
-		);		
+		);
 		BN_free(&private_key_bn);
+		EC_KEY_free(key);
 		return BITCOIN_ERROR_PUBLIC_KEY_INVALID_FORMAT;
 	}
 
@@ -151,5 +156,4 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 
 	return BITCOIN_SUCCESS;
 }
-
 
