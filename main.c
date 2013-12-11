@@ -113,7 +113,7 @@ static void BitcoinTool_help(BitcoinTool *self)
 	);
 	fprintf(file,
 		"  --input-type    Input data type, can be one of :\n"
-		"                   mini-private-key : Casascius mini private key"
+		"                   mini-private-key : Casascius mini private key\n"
 		"                   private-key      : ECDSA private key\n"
 		"                   public-key       : ECDSA public key\n"
 		"                   public-key-sha   : SHA256(public key)\n"
