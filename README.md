@@ -26,12 +26,13 @@ it'll tell you off about that.
 ### Command-line options
 
     --input-type : Input data type, can be one of :
-        private-key     : 32 byte ECDSA private key
-        private-key-wif : 37/38 byte ECDSA private key in wallet import format
-        public-key      : 33/65 byte ECDSA public key
-        public-key-sha  : 32 byte SHA256(public key) hash
-        public-key-rmd  : 20 byte RIPEMD160(SHA256(public key)) hash
-        address         : 21 byte Bitcoin address (prefix + hash)
+        mini-private-key : 30 character Casascius mini private key.
+        private-key      : 32 byte ECDSA private key
+        private-key-wif  : 37/38 byte ECDSA private key in wallet import format
+        public-key       : 33/65 byte ECDSA public key
+        public-key-sha   : 32 byte SHA256(public key) hash
+        public-key-rmd   : 20 byte RIPEMD160(SHA256(public key)) hash
+        address          : 21 byte Bitcoin address (prefix + hash)
 
     --input-format : Input data format, can be one of :
         raw             : raw binary data
@@ -50,6 +51,9 @@ it'll tell you off about that.
     --input         Specify input data on command line
     --input-file    Specify input file name.  File size must be exactly what
                     is expected for the corresponding --input-type.
+
+The `mini-private-key` input-type requires --input to be a 30 character ASCII
+string in valid mini private key format and --input-format to be `raw`.
 
 ### Examples
 
