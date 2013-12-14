@@ -336,7 +336,7 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 		applog(APPLOG_WARNING, __func__,
 			"using --input-format base58check with --public-key-compression"
 			" other than auto to override the WIF compression type is very"
-			" unusual, please be sure what you are doing!\n");
+			" unusual, please be sure what you are doing!");
 	}
 
 	return argc > 1;
@@ -1000,7 +1000,11 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 						BITCOIN_PRIVATE_KEY_SIZE;
 					break;
 				default :
-					applog(APPLOG_ERROR, __func__, "unspecified output type");
+					applog(APPLOG_ERROR, __func__,
+						"public key compression flag must be set using"
+						" --public-key-compression (compressed|uncompressed)"
+						" when importing raw private keys"
+					);
 					return BITCOIN_ERROR_INVALID_FORMAT;
 					break;
 			}
@@ -1012,7 +1016,7 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 			memcpy(self->output_raw, self->private_key.data, output_raw_size);
 			break;
 		default :
-			applog(APPLOG_ERROR, __func__, "unspecified output type");
+			applog(APPLOG_ERROR, __func__, "unknown output type");
 			return BITCOIN_ERROR_INVALID_FORMAT;
 			break;
 	}
