@@ -1,23 +1,27 @@
 #include "base58.h"
 #include "hash.h"
 #include "utility.h"
+#include "applog.h"
+#include "combination.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <alloca.h>
 #include <openssl/bn.h>
 
+/* base58 is 0-9,A-Z,a-z (62 chars), but with the 0,I,O, and l chars removed,
+leaving 58 chars */
+static const char base58_digits[] =
+	"123456789"
+	"ABCDEFGHJKLMNPQRSTUVWXYZ"
+	"abcdefghijkmnopqrstuvwxyz";
+
 BitcoinResult Bitcoin_EncodeBase58(
 	char *output, size_t output_buffer_size, size_t *encoded_output_size,
 	const void *source, size_t source_size
 )
 {
-	/* base58 is 0-9,A-Z,a-z (62 chars), but with the 0,I,O and l chars
-	removed, leaving 58 chars */
-	static const char digits[] =
-		"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 	static const unsigned base = 58;
-
 	const unsigned char *source_bytes = (const unsigned char *)source;
 	BIGNUM x, base_bn, div_bn, rem_bn;
 	BN_CTX *bn_ctx = BN_CTX_new();
@@ -40,7 +44,7 @@ BitcoinResult Bitcoin_EncodeBase58(
 		BN_div(&div_bn, &rem_bn, &x, &base_bn, bn_ctx);
 		BN_copy(&x, &div_bn);
 		if (output_count < output_buffer_size) {
-			*d++ = digits[BN_get_word(&rem_bn)];
+			*d++ = base58_digits[BN_get_word(&rem_bn)];
 			output_count++;
 		} else {
 			output_overflow = 1;
@@ -54,7 +58,7 @@ BitcoinResult Bitcoin_EncodeBase58(
 		(source_bytes != source_bytes+source_size)
 		&& *source_bytes == 0
 	) {
-		*d++ = digits[*source_bytes++];
+		*d++ = base58_digits[*source_bytes++];
 	}
 
 	/* reverse everything, so that it is most significant to least significant */
@@ -182,8 +186,10 @@ BitcoinResult Bitcoin_DecodeBase58Check(
 )
 {
 	struct BitcoinSHA256 hash;
+	size_t temp_decoded_output_size;
+
 	BitcoinResult result = Bitcoin_DecodeBase58(
-		output, output_buffer_size, decoded_output_size,
+		output, output_buffer_size, &temp_decoded_output_size,
 		input, input_size
 	);
 
@@ -191,18 +197,156 @@ BitcoinResult Bitcoin_DecodeBase58Check(
 		return result;
 	}
 
-	Bitcoin_DoubleSHA256(&hash, output, *decoded_output_size - BITCOIN_BASE58CHECK_CHECKSUM_SIZE);
+	Bitcoin_DoubleSHA256(&hash, output,
+		temp_decoded_output_size - BITCOIN_BASE58CHECK_CHECKSUM_SIZE
+	);
 
 	if (memcmp(hash.data
-		,output + *decoded_output_size - BITCOIN_BASE58CHECK_CHECKSUM_SIZE
+		,output + temp_decoded_output_size - BITCOIN_BASE58CHECK_CHECKSUM_SIZE
 		,BITCOIN_BASE58CHECK_CHECKSUM_SIZE)
 	) {
 		/* checksums didn't match, failure */
 		return BITCOIN_ERROR_CHECKSUM_FAILURE;
 	}
 
-	(*decoded_output_size) -= BITCOIN_BASE58CHECK_CHECKSUM_SIZE;
+
+	*decoded_output_size = temp_decoded_output_size -
+		BITCOIN_BASE58CHECK_CHECKSUM_SIZE;
 
 	/* checksum matched, success */
+	return BITCOIN_SUCCESS;
+}
+
+BitcoinResult Bitcoin_FixBase58Check(
+	char *fixed_output, size_t fixed_output_buffer_size, size_t *fixed_output_size,
+	uint8_t *output, size_t output_buffer_size, size_t *decoded_output_size,
+	const char *input, size_t input_size,
+	unsigned change_chars,
+	unsigned remove_chars,
+	unsigned insert_chars
+)
+{
+	/* attempt to 'fix' an invalid base58check string by changing characters
+	until the checksum is valid */
+
+	uint64_t change_count = 0;
+	size_t required_fixed_output_size = fixed_output_buffer_size + insert_chars;
+	BitcoinResult result;
+	static const unsigned radix = 58;
+	unsigned i, j, overflow;
+	char *format_output = NULL;
+	struct Combination c;
+	unsigned n, r, done = 0;
+	char *digits;
+
+	applog(APPLOG_NOTICE, __func__,
+		"Attempting to fix Base58Check input by changing %s%d character%s ...",
+		change_chars == 1 ? "" : "up to ",
+		(int)change_chars,
+		change_chars == 1 ? "" : "s"
+	);	
+
+	if (required_fixed_output_size < input_size) {
+		applog(APPLOG_ERROR, __func__,
+			"output buffer is not large enough (%u) to store changed"
+			" input text (%u)",
+			(unsigned)input_size,
+			(unsigned)required_fixed_output_size
+		);
+		return BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL;
+	}
+
+	format_output = malloc(required_fixed_output_size + 1);
+	*fixed_output_size = input_size;
+
+	for (r = 1; r <= change_chars && !done; r++) {
+		applog(APPLOG_NOTICE, __func__,
+			"Changing %d character%s ...",
+			r,
+			r == 1 ? "" : "s"
+		);
+		n = input_size;
+		Combination_create(&c, n, r);
+		digits = malloc(r);
+		do {
+			memcpy(fixed_output, input, input_size);
+			memset(digits, 0, r);
+			overflow = 0;
+
+			while (!overflow && !done) {
+				int carry = 0;
+
+				/* convert digits to base58 and update 'fixed' output */
+				for (i=0; i < r; i++) {
+					fixed_output[c.k[i]] = base58_digits[(int)digits[i]];
+					change_count++;
+				}
+
+				result = Bitcoin_DecodeBase58Check(output, output_buffer_size,
+					decoded_output_size, fixed_output, input_size
+				);
+
+				if (result == BITCOIN_SUCCESS) {
+					memcpy(format_output, input, input_size);
+					format_output[input_size] = '\0';
+					applog(APPLOG_WARNING, __func__, 
+						"from: %s", format_output
+					);				
+
+					memcpy(format_output, fixed_output, *fixed_output_size);
+					format_output[*fixed_output_size] = '\0';
+					applog(APPLOG_WARNING, __func__, 
+						"  to: %s", format_output
+					);
+
+					memset(format_output, ' ', *fixed_output_size);
+					format_output[*fixed_output_size] = '\0';
+					for (j=0; j < r; j++) {
+						format_output[c.k[j]] = '^';
+					}					
+					applog(APPLOG_WARNING, __func__, 
+						"      %s", format_output
+					);
+					done = 1;
+				}			
+
+				/* calculate next set of 'r' digits */
+				digits[0]++;
+				for (i=0; i < r; i++) {
+					if (carry) {
+						digits[i] += carry;
+						carry = 0;
+					}
+					if (digits[i] == radix) {
+						digits[i] = 0;
+						carry = 1;
+						overflow = i == r-1;
+					} else {
+						carry = 0;
+					}
+				}
+			}
+		} while (!done && Combination_next(&c));
+		Combination_destroy(&c);
+	}
+
+	if (!done) {
+		applog(APPLOG_WARNING, __func__, 
+			"Failed to find any combination of changing the Base58Check input"
+			" that results in a valid checksum. %llu combinations were tried."
+			" (%f%% chance of error).",
+			(long long unsigned)change_count,
+			((double)change_count / ((unsigned long long)1 << 32)) * 100
+		);
+		return BITCOIN_ERROR_CHECKSUM_FAILURE;
+	}
+
+	applog(APPLOG_WARNING, __func__, 
+		"Base58Check input has been corrected after %llu combinations "
+		" (%f%% chance of error).",
+		(long long unsigned)change_count,
+		((double)change_count / ((unsigned long long)1 << 32)) * 100
+	);
+
 	return BITCOIN_SUCCESS;
 }

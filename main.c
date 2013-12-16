@@ -1,3 +1,5 @@
+/* FIXME: this file is getting too long and ugly, I need to cut it up a bit */
+
 #define _POSIX_SOURCE
 
 #include <stdio.h>
@@ -13,6 +15,10 @@
 #include "base58.h"
 #include "applog.h"
 #include "result.h"
+
+#define BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_CHANGE_CHARS 3
+#define BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_INSERT_CHARS 3
+#define BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_REMOVE_CHARS 3
 
 typedef struct BitcoinTool BitcoinTool;
 typedef struct BitcoinToolOptions BitcoinToolOptions;
@@ -64,6 +70,18 @@ struct BitcoinToolOptions {
 		PUBLIC_KEY_COMPRESSION_COMPRESSED,
 		PUBLIC_KEY_COMPRESSION_UNCOMPRESSED
 	} public_key_compression;
+
+	/* attempt to fix invalid base58check encoded inputs? */
+	unsigned fix_base58;
+
+	/* maximum number of characters to change */
+	unsigned fix_base58_change_chars;
+
+	/* maximum number of characters to insert */
+	unsigned fix_base58_insert_chars;
+
+	/* maximum number of characters to remove */
+	unsigned fix_base58_remove_chars;
 };
 
 struct BitcoinTool {
@@ -150,6 +168,15 @@ static void BitcoinTool_help(BitcoinTool *self)
 		"      compressed   : force compressed public key\n"
 		"      uncompressed : force uncompressed public key\n"
 		"    (must be specified for raw/hex keys, should be auto for base58)\n"
+	);
+	fprintf(file,
+		"  --fix-base58check : Attempt to fix a Base58Check string by changing\n"
+		"                      characters until the checksum matches.\n"
+	);
+	fprintf(file,
+		"  --fix-base58check-change-chars : Maximum number of characters to change\n"
+		"                                   (default=%u)\n",
+		BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_CHANGE_CHARS
 	);
 	fprintf(file,
 		"\n"
@@ -313,6 +340,26 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 				return 0;
 			}
 			o->input = argv[i];
+		} else if (!strcmp(a, "--fix-base58check")) {
+			o->fix_base58 = 1;
+			o->fix_base58_change_chars = BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_CHANGE_CHARS;
+			o->fix_base58_insert_chars = BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_INSERT_CHARS;
+			o->fix_base58_remove_chars = BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_REMOVE_CHARS;
+		} else if (!strcmp(a, "--fix-base58check-change-chars")) {
+			unsigned parsed_value = 0;
+			if (++i >= argc) {
+				applog(APPLOG_ERROR, __func__, "missing value for %s", a);
+				return 0;
+			}
+			v = argv[i];
+			if (sscanf(v, "%u", &parsed_value)) {
+				o->fix_base58_change_chars = parsed_value;
+			} else {
+				applog(APPLOG_ERROR, __func__,
+					"value for %s should be an unsigned integer", a
+				);
+				return 0;
+			}
 		} else if (!strcmp(a, "--help")) {
 			BitcoinTool_help(self);
 		} else {
@@ -650,7 +697,7 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 			);
 			if (result != BITCOIN_SUCCESS) {
 				applog(APPLOG_ERROR, __func__,
-					"failed to decode hex input (%s)",
+					"Failed to decode hex input (%s).",
 					Bitcoin_ResultString(result)
 				);
 				return BITCOIN_ERROR_INVALID_FORMAT;
@@ -664,7 +711,7 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 			);
 			if (result != BITCOIN_SUCCESS) {
 				applog(APPLOG_ERROR, __func__,
-					"failed to decode base58 input (%s)",
+					"Failed to decode Base58 input (%s).",
 					Bitcoin_ResultString(result)
 				);
 				return BITCOIN_ERROR_INVALID_FORMAT;
@@ -678,9 +725,31 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 			);
 			if (result != BITCOIN_SUCCESS) {
 				applog(APPLOG_ERROR, __func__,
-					"failed to decode base58check input (%s)",
+					"Failed to decode Base58Check input (%s).",
 					Bitcoin_ResultString(result)
 				);
+
+				if (self->options.fix_base58) {
+					size_t output_base58_buffer_size = self->input_size + 1;
+					char *output_base58 = calloc(1, output_base58_buffer_size);
+					size_t output_base58_size = 0;
+
+					return Bitcoin_FixBase58Check(
+						output_base58, output_base58_buffer_size, &output_base58_size,
+						self->input_raw, sizeof(self->input_raw), &self->input_raw_size,
+						self->input, self->input_size,
+						self->options.fix_base58_change_chars,
+						self->options.fix_base58_insert_chars,
+						self->options.fix_base58_remove_chars
+					);
+				} else {
+					applog(APPLOG_ERROR, __func__,
+						"You can use the --fix-base58check option to change"
+						" the input string until the checksum is valid, but"
+						" this may return a false positive match."
+					);
+				}
+
 				return BITCOIN_ERROR_INVALID_FORMAT;
 			}
 			break;

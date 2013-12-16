@@ -112,4 +112,50 @@ BitcoinResult Bitcoin_DecodeBase58Check(
 	const void *input, size_t input_size
 );
 
+/** @brief Convert a Base58Check string to its binary representation, changing
+ *         characters necessary to make the checksum valid.
+ *         This is a very much NOT recommended, and last-ditch, effort of
+ *         fixing bad input (typos, damaged printout, etc).
+ *         The output buffer will be modified even if no recovery was possible.
+ *
+ *  @param[out] fixed_output Pointer to write fixed Base58Check output into.
+ *  @param[in] fixed_output_buffer_size Size in bytes of the fixed Base58Check
+               output buffer.  This specifies the maximum number of bytes to be
+               output.
+ *  @param[out] fixed_output_size Size in bytes of the fixed Base58Check output.
+ *              This can be 0 for empty input, or error condition, up to the
+ *              maximum specified in output_buffer_size.. 
+ *  @param[out] output Pointer to write decoded output into.
+ *  @param[out] output_buffer_size Size in bytes of the output buffer.
+ *              This specifies the maximum number of bytes to be output.
+ *  @param[out] decoded_output_size Size in bytes of the decoded output.
+ *              This can be 0 for empty input, or error condition, up to the
+ *              maximum specified in output_buffer_size.
+ *  @param[in] input Pointer to Base58Check string to read.
+ *  @param[in] input_size Number of characters to read from 'source'.
+ *  @param[in] change_chars Maximum number of characters to change.  Every
+ *                          possible combination of characters up to this
+ *                          amount will be tested, this can take a long time
+ *                          for large numbers.
+ *  @param[in] insert_chars Maximum number of characters to insert.  Every
+ *                          possible combination of inserted characters up to
+ *                          this amount will be tested.
+ *  @param[in] remove_chars Maximum number of characters to remove.  Every
+ *                          possible combination of inserted characters up to
+ *                          this amount will be tested.
+ *
+ *  @return BitcoinResult indicating error state :
+ *          BITCOIN_SUCCESS if success.
+ *          BITCOIN_ERROR_CHECKSUM_FAILURE if checksum failed.
+ *          BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL if output buffer too small.
+ */
+BitcoinResult Bitcoin_FixBase58Check(
+	char *fixed_output, size_t fixed_output_buffer_size, size_t *fixed_output_size,
+	uint8_t *output, size_t output_buffer_size, size_t *decoded_output_size,
+	const char *input, size_t input_size,
+	unsigned change_chars,
+	unsigned insert_chars,
+	unsigned remove_chars	
+);
+
 #endif

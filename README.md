@@ -52,6 +52,10 @@ it'll tell you off about that.
     --input-file    Specify input file name.  File size must be exactly what
                     is expected for the corresponding --input-type.
 
+    --fix-base58check : Attempt to fix a Base58Check string by changing
+                        characters until the checksum matches.
+    --fix-base58check-change-chars : Maximum number of characters to change (default=3)
+
 The `mini-private-key` input-type requires --input to be a 30 character ASCII
 string in valid mini private key format and --input-format to be `raw`.
 

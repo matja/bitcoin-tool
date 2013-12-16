@@ -112,5 +112,17 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-type public-key-rmd \
 	--output-format hex )
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+# -----------------------------------------------------------------------------
+TEST="10 - fix base58check address, by changing 1 character"
+EXPECTED="1NaqSiNC4tfbyX42NGca24pBWvJ5L4Bd5J"
+INPUT="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key-wif \
+	--input-format base58check \
+	--output-type address \
+	--output-format base58check \
+	--input 5J5sKGFLpZ4bQXEHiEmDp9Fuf7k36FqF3WoaNKHKDHnLfJYnkUR \
+	--fix-base58check )
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
 
 echo "all tests passed"
