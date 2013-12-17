@@ -422,30 +422,6 @@ void Bitcoin_MakeSHA256FromPublicKey(
 	Bitcoin_SHA256(output_hash, &public_key->data, BitcoinPublicKey_GetSize(public_key));
 }
 
-BitcoinResult Bitcoin_MakePrivateKeyWIFFromPrivateKey(
-	struct BitcoinPrivateKey *private_key
-)
-{
-	return BITCOIN_SUCCESS;
-}
-
-BitcoinResult Bitcoin_MakePrivateKeyFromPrivateKeyWIF(
-	struct BitcoinPrivateKey *private_key
-)
-{
-	return BITCOIN_SUCCESS;
-}
-
-
-BitcoinResult Bitcoin_MakePrivateKeyWIFFromMiniPrivateKey(
-
-)
-{
-
-	return BITCOIN_SUCCESS;
-}
-
-
 BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 {
 	/* Convert from the input type to the output type.
@@ -469,12 +445,6 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
 				case OUTPUT_TYPE_PUBLIC_KEY :
 				case OUTPUT_TYPE_PRIVATE_KEY_WIF :
-					result = Bitcoin_MakePrivateKeyWIFFromMiniPrivateKey(
-						&self->mini_private_key
-					);
-					if (result != BITCOIN_SUCCESS) {
-						return result;
-					}
 					self->mini_private_key_set = 1;
 					break;
 				default :
@@ -488,12 +458,6 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
 				case OUTPUT_TYPE_PUBLIC_KEY :
 				case OUTPUT_TYPE_PRIVATE_KEY_WIF :
-					result = Bitcoin_MakePrivateKeyWIFFromPrivateKey(
-						&self->private_key
-					);
-					if (result != BITCOIN_SUCCESS) {
-						return result;
-					}
 					self->private_key_wif_set = 1;
 					break;
 				case OUTPUT_TYPE_PRIVATE_KEY :
@@ -510,12 +474,6 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
 				case OUTPUT_TYPE_PUBLIC_KEY :
 				case OUTPUT_TYPE_PRIVATE_KEY :
-					result = Bitcoin_MakePrivateKeyFromPrivateKeyWIF(
-						&self->private_key
-					);
-					if (result != BITCOIN_SUCCESS) {
-						return result;
-					}
 					self->private_key_set = 1;
 					break;
 				case OUTPUT_TYPE_PRIVATE_KEY_WIF :
