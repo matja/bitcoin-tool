@@ -370,7 +370,7 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			if (!strcmp(v, "bitcoin")) {
 				o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_BITCOIN_PRIVATE_KEY;
 			} else if (!strcmp(v, "testnet")) {
-				o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_TESTNET_PRIVATE_KEY;
+				o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_BITCOIN_TEST_PRIVATE_KEY;
 			} else if (!strcmp(v, "litecoin")) {
 				o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_LITECOIN_PRIVATE_KEY;
 			} else if (!strcmp(v, "dogecoin")) {
@@ -390,7 +390,7 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			if (!strcmp(v, "bitcoin")) {
 				o->public_key_prefix = BITCOIN_ADDRESS_PREFIX_BITCOIN_PUBKEY_HASH;
 			} else if (!strcmp(v, "testnet")) {
-				o->public_key_prefix = BITCOIN_ADDRESS_PREFIX_TESTNET_PUBKEY_HASH;
+				o->public_key_prefix = BITCOIN_ADDRESS_PREFIX_BITCOIN_TEST_PUBKEY_HASH;
 			} else if (!strcmp(v, "litecoin")) {
 				o->public_key_prefix = BITCOIN_ADDRESS_PREFIX_LITECOIN_PUBKEY_HASH;
 			} else if (!strcmp(v, "dogecoin")) {
@@ -457,8 +457,8 @@ int Bitcoin_GetAddressPrefixFromPrivateKeyPrefix(
 	switch (key_prefix) {
 		case BITCOIN_ADDRESS_PREFIX_BITCOIN_PRIVATE_KEY :
 			return BITCOIN_ADDRESS_PREFIX_BITCOIN_PUBKEY_HASH;
-		case BITCOIN_ADDRESS_PREFIX_TESTNET_PRIVATE_KEY :
-			return BITCOIN_ADDRESS_PREFIX_TESTNET_PUBKEY_HASH;
+		case BITCOIN_ADDRESS_PREFIX_BITCOIN_TEST_PRIVATE_KEY :
+			return BITCOIN_ADDRESS_PREFIX_BITCOIN_TEST_PUBKEY_HASH;
 		case BITCOIN_ADDRESS_PREFIX_LITECOIN_PRIVATE_KEY :
 			return BITCOIN_ADDRESS_PREFIX_LITECOIN_PUBKEY_HASH;
 		case BITCOIN_ADDRESS_PREFIX_DOGECOIN_PRIVATE_KEY :
