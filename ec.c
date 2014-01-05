@@ -12,6 +12,7 @@ reference : https://en.bitcoin.it/wiki/Secp256k1
 #include "ec.h"
 #include "base58.h"
 #include "applog.h"
+#include "hash.h"
 
 int BitcoinPublicKey_Empty(const struct BitcoinPublicKey *public_key)
 {
@@ -67,11 +68,11 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 )
 {
 	BN_CTX *ctx = NULL;
-	EC_KEY *key = EC_KEY_new_by_curve_name(NID_secp256k1);
+	EC_KEY *key = NULL;
 	EC_POINT *ec_public = NULL;
 	unsigned char *public_key_ptr = public_key->data;
 	BIGNUM private_key_bn;
-	const EC_GROUP *group = EC_KEY_get0_group(key);
+	const EC_GROUP *group = NULL;
 	int size, size2;
 	unsigned compression = private_key->public_key_compression;
 	size_t expected_public_key_size = 0;
@@ -83,13 +84,16 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 			break;
 		default :
 			applog(APPLOG_ERROR, __func__,
-				"public key compression is not specified, please set using --public-key-compression compressed/uncompressed"
+				"public key compression is not specified, please set using"
+				" --public-key-compression compressed/uncompressed"
 			);
 			EC_KEY_free(key);
 			return BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT;
 			break;
 	}
 
+	key = EC_KEY_new_by_curve_name(NID_secp256k1);
+	group = EC_KEY_get0_group(key);
 	BN_init(&private_key_bn);
 	BN_bin2bn(private_key->data, BITCOIN_PRIVATE_KEY_SIZE, &private_key_bn);
 	ec_public = EC_POINT_new(group);
@@ -156,4 +160,3 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 
 	return BITCOIN_SUCCESS;
 }
-

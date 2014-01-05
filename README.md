@@ -52,12 +52,22 @@ it'll tell you off about that.
     --input-file    Specify input file name.  File size must be exactly what
                     is expected for the corresponding --input-type.
 
+
+    --private-key-prefix : Prefix byte of raw private key. Can be one of:
+                             (bitcoin|testnet|litecoin|dogecoin)
+
+    --public-key-prefix  : Prefix byte of raw public key. Can be one of:
+                             (bitcoin|testnet|litecoin|dogecoin)
+
     --fix-base58check : Attempt to fix a Base58Check string by changing
                         characters until the checksum matches.
     --fix-base58check-change-chars : Maximum number of characters to change (default=3)
 
 The `mini-private-key` input-type requires --input to be a 30 character ASCII
 string in valid mini private key format and --input-format to be `raw`.
+
+If raw keys are input and an address output is required, then the key type
+prefix must be specified via --private-key-prefix or --public-key-prefix.
 
 ### Examples
 
@@ -77,7 +87,9 @@ $ hexdump -e '32/1 "%02X" "\n"' key.bin
 62A87AD3272B41E67108FEA10C57BA6ED609F2F7A2264A83B690CD45707090D1
 ```
 
-Convert private key to WIF (Wallet Import Format) :
+Convert private key to WIF (Wallet Import Format).  Since it is a raw key, the
+network type prefix must be explicitally set (to bitcoin in this case) because
+it cannot be determined from the raw key :
 ```
 $ ./bitcoin-tool \
     --input-type private-key \
@@ -85,11 +97,14 @@ $ ./bitcoin-tool \
     --input-file key.bin \
     --output-type private-key-wif \
     --output-format base58check \
+    --private-key-prefix bitcoin \
     --public-key-compression uncompressed
 
 5JZjfs5wJv1gNkJXCmYpyj6VxciqPkwmK4yHW8zMmPN1PW7Hk7F
 ```
-Specifying --public-key-compression is mandatory because the WIF output is different depending on which public key compression type you choose, and there is no way to guess from a raw private key.
+Specifying --public-key-compression is mandatory because the WIF output is
+different depending on which public key compression type you choose, and there
+is no way to guess from a raw private key.
 
 Same again but compressed public key :
 ```
@@ -99,12 +114,15 @@ $ ./bitcoin-tool \
     --input-file key.bin \
     --output-type private-key-wif \
     --output-format base58check \
+    --private-key-prefix bitcoin \
     --public-key-compression compressed
 
 KzXVLY4ni4yznz8LJwdUmNoGpUfebSxiakXRqcGAeuhihzaVe3Rz
 ```
 
-Note that the WIF private key is longer with public key compression on, because an extra byte flag is stored to indicate that the public key should be compressed (the private key is exactly the same).
+Note that the WIF private key is longer with public key compression on, because
+an extra byte flag is stored to indicate that the public key should be compressed
+(the private key is exactly the same).
 
 Show address for uncompressed WIF private key:
 ```
@@ -152,6 +170,7 @@ sign transactions with that key (not necessarily online).
     --input-file <(openssl rand 32) \
     --output-type address \
     --output-format base58check \
+    --private-key-prefix bitcoin \
     --public-key-compression compressed
 ```
 This outputs an address you can send Bitcoins to, if you want to loose them forever (because the private key is never output!).
@@ -171,6 +190,7 @@ So There.
     --input-format raw \
     --input-file <(echo -n sausage|openssl dgst -sha256 -binary) \
     --public-key-compression uncompressed \
+    --private-key-prefix bitcoin \
     --output-type all
 
 address.hex:000511096ab078473911e0222fcbc3375314e2bab1

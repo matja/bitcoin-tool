@@ -11,16 +11,6 @@
 #include "result.h" /* BitcoinResult */
 #include "utility.h" /* uint_max2 */
 
- /* Define address prefix byte values, from:
-   https://en.bitcoin.it/wiki/List_of_address_prefixes
-*/
-#define BITCOIN_ADDRESS_PREFIX_BITCOIN_PUBKEY_HASH 0
-#define BITCOIN_ADDRESS_PREFIX_BITCOIN_SCRIPT_HASH 5
-#define BITCOIN_ADDRESS_PREFIX_TESTNET_PUBKEY_HASH 111
-#define BITCOIN_ADDRESS_PREFIX_BITCOIN_PRIVATE_KEY 128
-#define BITCOIN_ADDRESS_PREFIX_TESTNET_SCRIPT_HASH 196
-#define BITCOIN_ADDRESS_PREFIX_TESTNET_PRIVATE_KEY 239
-
 /* declare Bitcoin address format */
 
 #define BITCOIN_ADDRESS_VERSION_SIZE 1
@@ -44,10 +34,37 @@ enum BitcoinPublicKeyCompression {
 	BITCOIN_PUBLIC_KEY_UNCOMPRESSED
 };
 
+/*
+   Define address prefix byte values, from:
+   https://en.bitcoin.it/wiki/List_of_address_prefixes
+*/
+enum BitcoinAddressPrefix {
+	BITCOIN_ADDRESS_PREFIX_INVALID = -1,
+	BITCOIN_ADDRESS_PREFIX_BITCOIN_PUBKEY_HASH = 0,
+	BITCOIN_ADDRESS_PREFIX_BITCOIN_SCRIPT_HASH = 5,
+	BITCOIN_ADDRESS_PREFIX_DOGECOIN_PUBKEY_HASH = 30,
+	BITCOIN_ADDRESS_PREFIX_LITECOIN_PUBKEY_HASH = 48,
+	BITCOIN_ADDRESS_PREFIX_TESTNET_PUBKEY_HASH = 111,
+	BITCOIN_ADDRESS_PREFIX_BITCOIN_PRIVATE_KEY = 128,
+	BITCOIN_ADDRESS_PREFIX_DOGECOIN_PRIVATE_KEY = 158,
+	BITCOIN_ADDRESS_PREFIX_LITECOIN_PRIVATE_KEY = 176,
+	BITCOIN_ADDRESS_PREFIX_TESTNET_SCRIPT_HASH = 196,
+	BITCOIN_ADDRESS_PREFIX_TESTNET_PRIVATE_KEY = 239
+};
+
 struct BitcoinPublicKey
 {
 	unsigned char data[BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE];
+
+/*
+Compression flag - do we compress the public key representation (store just
+the x coordinate), or leave the uncompressed key as-is (store both x and y
+coordinates).
+*/
 	enum BitcoinPublicKeyCompression compression;
+
+/* Network type	(prefix byte on addresses) */
+	enum BitcoinAddressPrefix prefix;
 };
 
 /* private key defines */
@@ -81,10 +98,14 @@ struct BitcoinPrivateKey
 {
 	unsigned char data[BITCOIN_PRIVATE_KEY_SIZE];
 /*
-a private key is never actually compressed, this flag just indicates wether
-to generate a compressed or uncompressed public key from this private key.
+A private key is never actually compressed in the sense that the size
+changes, this flag just indicates wether to generate a compressed or
+uncompressed public key from this private key.
 */
 	enum BitcoinPublicKeyCompression public_key_compression;
+
+/* Network type	(prefix byte on addresses) */
+	enum BitcoinAddressPrefix prefix;	
 };
 
 /** @brief Check if a public key is not set.

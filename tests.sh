@@ -33,6 +33,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-type address \
 	--output-format base58check \
 	--public-key-compression compressed \
+	--private-key-prefix bitcoin \
 	--input 0000000000000000000000000000000000000000000000000000000000000001 )
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
 # -----------------------------------------------------------------------------
@@ -44,6 +45,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-type address \
 	--output-format base58check \
 	--public-key-compression uncompressed \
+	--private-key-prefix bitcoin \
 	--input 0000000000000000000000000000000000000000000000000000000000000001 )
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
 # -----------------------------------------------------------------------------
@@ -76,7 +78,9 @@ OUTPUT=$($BITCOIN_TOOL \
 	--input-file <(echo "${INPUT}"|xxd -r -p) \
 	--output-type private-key-wif \
 	--output-format base58check \
-    --public-key-compression uncompressed )
+	--public-key-compression uncompressed \
+	--private-key-prefix bitcoin \
+)
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
 # -----------------------------------------------------------------------------
 TEST="7 - raw private key file, to compressed base58check WIF private key"
@@ -88,7 +92,9 @@ OUTPUT=$($BITCOIN_TOOL \
 	--input-file <(echo "${INPUT}"|xxd -r -p) \
 	--output-type private-key-wif \
 	--output-format base58check \
-    --public-key-compression compressed )
+	--public-key-compression compressed \
+	--private-key-prefix bitcoin \
+)
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
 # -----------------------------------------------------------------------------
 TEST="8 - hex ripemd160 hash of public key, to base58check address"
@@ -99,7 +105,9 @@ OUTPUT=$($BITCOIN_TOOL \
 	--input-format hex \
 	--input "${INPUT}" \
 	--output-type address \
-	--output-format base58check )
+	--output-format base58check \
+	--public-key-prefix bitcoin \
+)
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
 # -----------------------------------------------------------------------------
 TEST="9 - base58check address, to hex ripemd160 hash of public key"
@@ -124,5 +132,42 @@ OUTPUT=$($BITCOIN_TOOL \
 	--input 5J5sKGFLpZ4bQXEHiEmDp9Fuf7k36FqF3WoaNKHKDHnLfJYnkUR \
 	--fix-base58check )
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+# -----------------------------------------------------------------------------
+TEST="11 - testnet compressed private key to address"
+EXPECTED="mxToLbBqPcSNnqPCSnrYjFv172TFPLjVNf"
+INPUT="92Wn1EBgiwDNT8SC7WMZfcSk2y3mQkLUPAQtwMNYZQGAzCFUTdu"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key-wif \
+	--input-format base58check \
+	--output-type address \
+	--output-format base58check \
+	--input "${INPUT}" \
+	--fix-base58check )
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+# -----------------------------------------------------------------------------
+TEST="12 - litecoin compressed private key to address"
+EXPECTED="LMzBLYQG2opHvMBihMQgJBboxunoj5pssC"
+INPUT="6vVAeKejJRV5wgrAqtqi7eQsS4Zf79nkw8xuYntU3JwHCiexYaJ"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key-wif \
+	--input-format base58check \
+	--output-type address \
+	--output-format base58check \
+	--input "${INPUT}" \
+	--fix-base58check )
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+# -----------------------------------------------------------------------------
+TEST="13 - dogecoin compressed private key to address"
+EXPECTED="DHEPGdnS46dHT79tkfm5DyhGAbQj4Xi8Ni"
+INPUT="6KayMYAEQfFACQhZUzbBpFhvGzDWSmRtaY9NrPQGig9qVzRCzQf"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key-wif \
+	--input-format base58check \
+	--output-type address \
+	--output-format base58check \
+	--input "${INPUT}" \
+	--fix-base58check )
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+# -----------------------------------------------------------------------------
 
 echo "all tests passed"

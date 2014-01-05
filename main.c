@@ -82,6 +82,14 @@ struct BitcoinToolOptions {
 
 	/* maximum number of characters to remove */
 	unsigned fix_base58_remove_chars;
+
+	/* Set or override private key prefix, for raw keys which do not specify
+	   a prefix.  The prefix is encoded into WIF format keys. */
+	enum BitcoinAddressPrefix private_key_prefix;
+
+	/* Set or override public key prefix, for raw keys which do not specify
+	   a prefix.  The prefix is encoded into the final address. */
+	enum BitcoinAddressPrefix public_key_prefix;	
 };
 
 struct BitcoinTool {
@@ -170,6 +178,14 @@ static void BitcoinTool_help(BitcoinTool *self)
 		"    (must be specified for raw/hex keys, should be auto for base58)\n"
 	);
 	fprintf(file,
+		"  --private-key-prefix : Prefix byte of raw private key. Can be one\n"
+		"                         of (bitcoin|testnet|litecoin|dogecoin)\n"
+	);
+	fprintf(file,
+		"  --public-key-prefix : Prefix byte of raw public key. Can be one\n"
+		"                         of (bitcoin|testnet|litecoin|dogecoin)\n"
+	);
+	fprintf(file,
 		"  --fix-base58check : Attempt to fix a Base58Check string by changing\n"
 		"                      characters until the checksum matches.\n"
 	);
@@ -212,7 +228,12 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 	unsigned i = 0;
 	BitcoinToolOptions *o = &self->options;
 
+	/* detect key compression where possible */
 	o->public_key_compression = PUBLIC_KEY_COMPRESSION_AUTO;
+
+	/* fail-safe  key prefixes - don't assume Bitcoin for raw keys */
+	o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_INVALID;
+	o->public_key_prefix = BITCOIN_ADDRESS_PREFIX_INVALID;
 
 	for (i=1; i<argc; i++) {
 		const char *a = argv[i];
@@ -340,6 +361,46 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 				return 0;
 			}
 			o->input = argv[i];
+		} else if (!strcmp(a, "--private-key-prefix")) {
+			if (++i >= argc) {
+				applog(APPLOG_ERROR, __func__, "missing value for %s", a);
+				return 0;
+			}
+			v = argv[i];
+			if (!strcmp(v, "bitcoin")) {
+				o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_BITCOIN_PRIVATE_KEY;
+			} else if (!strcmp(v, "testnet")) {
+				o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_TESTNET_PRIVATE_KEY;
+			} else if (!strcmp(v, "litecoin")) {
+				o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_LITECOIN_PRIVATE_KEY;
+			} else if (!strcmp(v, "dogecoin")) {
+				o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_DOGECOIN_PRIVATE_KEY;
+			} else {
+				applog(APPLOG_ERROR, __func__,
+					"unknown value \"%s\" for %s", a
+				);
+				return 0;
+			}
+		} else if (!strcmp(a, "--public-key-prefix")) {
+			if (++i >= argc) {
+				applog(APPLOG_ERROR, __func__, "missing value for %s", a);
+				return 0;
+			}
+			v = argv[i];
+			if (!strcmp(v, "bitcoin")) {
+				o->public_key_prefix = BITCOIN_ADDRESS_PREFIX_BITCOIN_PUBKEY_HASH;
+			} else if (!strcmp(v, "testnet")) {
+				o->public_key_prefix = BITCOIN_ADDRESS_PREFIX_TESTNET_PUBKEY_HASH;
+			} else if (!strcmp(v, "litecoin")) {
+				o->public_key_prefix = BITCOIN_ADDRESS_PREFIX_LITECOIN_PUBKEY_HASH;
+			} else if (!strcmp(v, "dogecoin")) {
+				o->public_key_prefix = BITCOIN_ADDRESS_PREFIX_DOGECOIN_PUBKEY_HASH;
+			} else {
+				applog(APPLOG_ERROR, __func__,
+					"unknown value \"%s\" for %s", a
+				);
+				return 0;
+			}
 		} else if (!strcmp(a, "--fix-base58check")) {
 			o->fix_base58 = 1;
 			o->fix_base58_change_chars = BITCOINTOOL_OPTION_DEFAULT_BASE58CHECK_CHANGE_CHARS;
@@ -389,13 +450,34 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 	return argc > 1;
 }
 
+int Bitcoin_GetAddressPrefixFromPrivateKeyPrefix(
+	enum BitcoinAddressPrefix key_prefix
+)
+{
+	switch (key_prefix) {
+		case BITCOIN_ADDRESS_PREFIX_BITCOIN_PRIVATE_KEY :
+			return BITCOIN_ADDRESS_PREFIX_BITCOIN_PUBKEY_HASH;
+		case BITCOIN_ADDRESS_PREFIX_TESTNET_PRIVATE_KEY :
+			return BITCOIN_ADDRESS_PREFIX_TESTNET_PUBKEY_HASH;
+		case BITCOIN_ADDRESS_PREFIX_LITECOIN_PRIVATE_KEY :
+			return BITCOIN_ADDRESS_PREFIX_LITECOIN_PUBKEY_HASH;
+		case BITCOIN_ADDRESS_PREFIX_DOGECOIN_PRIVATE_KEY :
+			return BITCOIN_ADDRESS_PREFIX_DOGECOIN_PUBKEY_HASH;
+		default :	
+			break;			
+	}
+
+	return BITCOIN_ADDRESS_PREFIX_INVALID;
+}
+
 void Bitcoin_MakeAddressFromRIPEMD160(
 	struct BitcoinAddress *address,
-	const struct BitcoinRIPEMD160 *hash
+	const struct BitcoinRIPEMD160 *hash,
+	enum BitcoinAddressPrefix address_prefix
 )
 {
 	memcpy(address->data+1, hash->data, BITCOIN_RIPEMD160_SIZE);
-	address->data[0] = BITCOIN_ADDRESS_PREFIX_BITCOIN_PUBKEY_HASH;
+	address->data[0] = address_prefix;
 }
 
 void Bitcoin_MakeRIPEMD160FromAddress(
@@ -487,13 +569,32 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 				case OUTPUT_TYPE_ADDRESS :
 				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
-				case OUTPUT_TYPE_PUBLIC_KEY :
-					result = Bitcoin_MakePublicKeyFromPrivateKey(&self->public_key, &self->private_key);
+				case OUTPUT_TYPE_PUBLIC_KEY : {
+					if (self->public_key.prefix == BITCOIN_ADDRESS_PREFIX_INVALID) {
+						if (self->private_key.prefix == BITCOIN_ADDRESS_PREFIX_INVALID) {
+							applog(APPLOG_ERROR, __func__,
+								"private key prefix is not specified, please set using"
+								" --private-key-prefix option"
+							);
+							return BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT;
+						} else {
+							/* this nesting level is getting ridiculous */
+							self->public_key.prefix =
+								Bitcoin_GetAddressPrefixFromPrivateKeyPrefix(
+									self->private_key.prefix
+								);
+						}
+					}
+
+					result = Bitcoin_MakePublicKeyFromPrivateKey(
+						&self->public_key, &self->private_key
+					);
 					if (result != BITCOIN_SUCCESS) {
 						return result;
 					}
 					self->public_key_set = 1;
 					break;
+				}
 				case OUTPUT_TYPE_PRIVATE_KEY_WIF :
 				case OUTPUT_TYPE_PRIVATE_KEY :
 					return BITCOIN_SUCCESS;
@@ -544,10 +645,30 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 		case INPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 			switch (self->options.output_type) {
 				case OUTPUT_TYPE_ALL :
-				case OUTPUT_TYPE_ADDRESS :
-					Bitcoin_MakeAddressFromRIPEMD160(&self->address, &self->public_key_ripemd160);
+				case OUTPUT_TYPE_ADDRESS : {
+					/* check if user has asked to override public key prefix */
+					if (self->options.public_key_prefix != BITCOIN_ADDRESS_PREFIX_INVALID) {
+						self->public_key.prefix = self->options.public_key_prefix;
+					}
+
+					/* refuse to generate an address with no prefix set */
+					if (self->public_key.prefix == BITCOIN_ADDRESS_PREFIX_INVALID) {
+						applog(APPLOG_ERROR, __func__,
+							"Raw public key has no network prefix and it is unsafe"
+							" to assume one.  Please explicitally specify prefix using"
+							" --public-key-prefix option."
+						);
+						return BITCOIN_ERROR_IMPOSSIBLE_CONVERSION;				
+					}
+
+					Bitcoin_MakeAddressFromRIPEMD160(&self->address,
+						&self->public_key_ripemd160,
+						self->public_key.prefix
+					);
+
 					self->address_set = 1;
 					break;
+				}
 				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 					return BITCOIN_SUCCESS;
 					break;
@@ -691,8 +812,9 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 					size_t output_base58_buffer_size = self->input_size + 1;
 					char *output_base58 = calloc(1, output_base58_buffer_size);
 					size_t output_base58_size = 0;
+					int result;
 
-					return Bitcoin_FixBase58Check(
+					result = Bitcoin_FixBase58Check(
 						output_base58, output_base58_buffer_size, &output_base58_size,
 						self->input_raw, sizeof(self->input_raw), &self->input_raw_size,
 						self->input, self->input_size,
@@ -700,6 +822,10 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 						self->options.fix_base58_insert_chars,
 						self->options.fix_base58_remove_chars
 					);
+
+					free(output_base58);
+
+					return result;
 				} else {
 					applog(APPLOG_ERROR, __func__,
 						"You can use the --fix-base58check option to change"
@@ -764,12 +890,32 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 			   private key. */
 			Bitcoin_SHA256(&hash, input_raw, BITCOIN_MINI_PRIVATE_KEY_SIZE);
 			memcpy(self->private_key.data, hash.data, BITCOIN_SHA256_SIZE);
-			self->private_key_set = 1;
 
 			/* since the comression type is always uncompressed, we can set
-			   that to, and we can produce a valid WIF key */
+			   that too, and we can produce a valid WIF key */
 			self->private_key.public_key_compression = BITCOIN_PUBLIC_KEY_UNCOMPRESSED;
+
+			if (self->options.private_key_prefix == BITCOIN_ADDRESS_PREFIX_INVALID) {
+				/* This is normal : mini keys don't store a prefix, so Bitcoin
+				   is implied */
+				self->private_key.prefix = BITCOIN_ADDRESS_PREFIX_BITCOIN_PRIVATE_KEY;
+			} else {						
+				/* user is asking to override the implicit Bitcoin prefix -
+				   this is very unusual so warn about it. */				
+				self->private_key.prefix = self->options.private_key_prefix;
+				applog(APPLOG_WARNING, __func__,
+					"Overriding mini private key prefix is unusual, since"
+					" only Bitcoin is implied in the mini key format."
+					" Please check your inputs."
+				);
+			}
+
+			/* we have a valid pirvate key */
+			self->private_key_set = 1;
+
+			/* we have a valid WIF private key */
 			self->private_key_wif_set = 1;
+
 			break;
 		}
 		case INPUT_TYPE_PRIVATE_KEY : {
@@ -797,6 +943,16 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 			);
 			assert(sizeof(self->private_key.data) >= input_raw_size);
 			memcpy(self->private_key.data, input_raw, input_raw_size);
+
+			if (self->options.private_key_prefix == BITCOIN_ADDRESS_PREFIX_INVALID) {
+				applog(APPLOG_ERROR, __func__,
+					"Raw private key has no network prefix and it is unsafe"
+					" to assume one.  Please explicitally specify prefix using"
+					" --private-key-prefix option."
+				);
+				return BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT;
+			}
+			self->private_key.prefix = self->options.private_key_prefix;
 			self->private_key_set = 1;
 			break;
 		}
@@ -822,13 +978,19 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 					self->private_key.public_key_compression = BITCOIN_PUBLIC_KEY_COMPRESSED;
 					break;
 			}
-			applog(APPLOG_INFO, __func__, "private key import wif: size = %d, compress = %d", input_raw_size, self->private_key.public_key_compression);
 			assert(sizeof(self->private_key.data) == BITCOIN_PRIVATE_KEY_SIZE);
 			memcpy(self->private_key.data,
 				input_raw+BITCOIN_PRIVATE_KEY_WIF_VERSION_SIZE,
 				BITCOIN_PRIVATE_KEY_SIZE
 			);
+			self->private_key.prefix = input_raw[0];
 			self->private_key_wif_set = 1;
+			applog(APPLOG_INFO, __func__,
+				"private key import wif: prefix = %u, size = %u, compress = %u",
+				(unsigned)self->private_key.prefix,
+				(unsigned)input_raw_size,
+				(unsigned)self->private_key.public_key_compression
+			);			
 			break;
 		}
 		case INPUT_TYPE_PUBLIC_KEY : {
@@ -1175,6 +1337,9 @@ BitcoinTool *BitcoinTool_create(void)
 	self->parseOptions = BitcoinTool_parseOptions;
 	self->run = BitcoinTool_run;
 	self->destroy = BitcoinTool_destroy;
+
+	self->private_key.prefix = BITCOIN_ADDRESS_PREFIX_INVALID;
+	self->public_key.prefix = BITCOIN_ADDRESS_PREFIX_INVALID;
 
 	return self;
 }
