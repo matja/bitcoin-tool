@@ -169,5 +169,17 @@ OUTPUT=$($BITCOIN_TOOL \
 	--fix-base58check )
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
 # -----------------------------------------------------------------------------
+TEST="14 - feathercoin compressed private key to address"
+EXPECTED="6ggpjHf7iq2vdvq8HNfZo9XQSLeVfxezzX"
+INPUT="5nU4VfsTK8B4ra3ytR4YqSWH8txuGxZUCuVSyKKtU9pdENQkpTi"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key-wif \
+	--input-format base58check \
+	--output-type address \
+	--output-format base58check \
+	--input "${INPUT}" \
+	--fix-base58check )
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+# -----------------------------------------------------------------------------
 
 echo "all tests passed"
