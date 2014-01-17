@@ -118,8 +118,8 @@ BitcoinResult Bitcoin_DecodeBase58(
 	};
 	const char *input_bytes_start = (const char *)input;
 	const char *input_bytes_end = input_bytes_start + input_size;
-	const char *pzc = input_bytes_start;
 	const char *pc = input_bytes_end - 1;
+	const char *pzc = input_bytes_start;
 	unsigned leading_zeros = 0;
 	unsigned bn_bytes_req = 0;
 	unsigned bn_bytes_wrote = 0;
@@ -143,8 +143,6 @@ BitcoinResult Bitcoin_DecodeBase58(
 		leading_zeros++;
 		pzc++;
 	}
-
-	pc = input_bytes_end - 1;
 
 	while (pc >= pzc) {
 		int v = digits[(unsigned)*pc];
@@ -237,14 +235,13 @@ BitcoinResult Bitcoin_FixBase58Check(
 	char *format_output = NULL;
 	struct Combination c;
 	unsigned n, r, done = 0;
-	char *digits;
 
 	applog(APPLOG_NOTICE, __func__,
 		"Attempting to fix Base58Check input by changing %s%d character%s ...",
 		change_chars == 1 ? "" : "up to ",
 		(int)change_chars,
 		change_chars == 1 ? "" : "s"
-	);	
+	);
 
 	if (required_fixed_output_size < input_size) {
 		applog(APPLOG_ERROR, __func__,
@@ -260,6 +257,7 @@ BitcoinResult Bitcoin_FixBase58Check(
 	*fixed_output_size = input_size;
 
 	for (r = 1; r <= change_chars && !done; r++) {
+		char *digits = malloc(r);
 		applog(APPLOG_NOTICE, __func__,
 			"Changing %d character%s ...",
 			r,
@@ -267,7 +265,6 @@ BitcoinResult Bitcoin_FixBase58Check(
 		);
 		n = input_size;
 		Combination_create(&c, n, r);
-		digits = malloc(r);
 		do {
 			memcpy(fixed_output, input, input_size);
 			memset(digits, 0, r);
@@ -289,13 +286,13 @@ BitcoinResult Bitcoin_FixBase58Check(
 				if (result == BITCOIN_SUCCESS) {
 					memcpy(format_output, input, input_size);
 					format_output[input_size] = '\0';
-					applog(APPLOG_WARNING, __func__, 
+					applog(APPLOG_WARNING, __func__,
 						"from: %s", format_output
-					);				
+					);
 
 					memcpy(format_output, fixed_output, *fixed_output_size);
 					format_output[*fixed_output_size] = '\0';
-					applog(APPLOG_WARNING, __func__, 
+					applog(APPLOG_WARNING, __func__,
 						"  to: %s", format_output
 					);
 
@@ -303,19 +300,18 @@ BitcoinResult Bitcoin_FixBase58Check(
 					format_output[*fixed_output_size] = '\0';
 					for (j=0; j < r; j++) {
 						format_output[c.k[j]] = '^';
-					}					
-					applog(APPLOG_WARNING, __func__, 
+					}
+					applog(APPLOG_WARNING, __func__,
 						"      %s", format_output
 					);
 					done = 1;
-				}			
+				}
 
 				/* calculate next set of 'r' digits */
 				digits[0]++;
 				for (i=0; i < r; i++) {
 					if (carry) {
 						digits[i] += carry;
-						carry = 0;
 					}
 					if (digits[i] == radix) {
 						digits[i] = 0;
@@ -328,10 +324,13 @@ BitcoinResult Bitcoin_FixBase58Check(
 			}
 		} while (!done && Combination_next(&c));
 		Combination_destroy(&c);
+		free(digits);
 	}
 
+	free(format_output);
+
 	if (!done) {
-		applog(APPLOG_WARNING, __func__, 
+		applog(APPLOG_WARNING, __func__,
 			"Failed to find any combination of changing the Base58Check input"
 			" that results in a valid checksum. %llu combinations were tried."
 			" (%f%% chance of error).",
@@ -341,7 +340,7 @@ BitcoinResult Bitcoin_FixBase58Check(
 		return BITCOIN_ERROR_CHECKSUM_FAILURE;
 	}
 
-	applog(APPLOG_WARNING, __func__, 
+	applog(APPLOG_WARNING, __func__,
 		"Base58Check input has been corrected after %llu combinations "
 		" (%f%% chance of error).",
 		(long long unsigned)change_count,
