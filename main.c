@@ -938,7 +938,7 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 					(input_raw_size == BITCOIN_PRIVATE_KEY_WIF_UNCOMPRESSED_SIZE) ||
 					(input_raw_size == BITCOIN_PRIVATE_KEY_WIF_COMPRESSED_SIZE)
 				) {
-					extra_message = " (did you mean \"--input-format private-key-wif\"?)";
+					extra_message = " (did you mean \"--input-type private-key-wif\"?)";
 				}
 				applog(APPLOG_ERROR, __func__,
 					"invalid size input for private key:"
