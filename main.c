@@ -10,7 +10,7 @@
 #include <assert.h>
 
 #include "hash.h"
-#include "ec.h"
+#include "keys.h"
 #include "utility.h"
 #include "base58.h"
 #include "applog.h"
@@ -179,11 +179,11 @@ static void BitcoinTool_help(BitcoinTool *self)
 	);
 	fprintf(file,
 		"  --private-key-prefix : Prefix byte of raw private key. Can be one\n"
-		"                         of (bitcoin|testnet|litecoin|feathercoin|dogecoin)\n"
+		"                         of (bitcoin|testnet|litecoin|feathercoin|dogecoin|quark)\n"
 	);
 	fprintf(file,
 		"  --public-key-prefix : Prefix byte of raw public key. Can be one\n"
-		"                         of (bitcoin|testnet|litecoin|feathercoin|dogecoin)\n"
+		"                         of (bitcoin|testnet|litecoin|feathercoin|dogecoin|quark)\n"
 	);
 	fprintf(file,
 		"  --fix-base58check : Attempt to fix a Base58Check string by changing\n"
@@ -377,6 +377,8 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 				o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_FEATHERCOIN_PRIVATE_KEY;
 			} else if (!strcmp(v, "dogecoin")) {
 				o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_DOGECOIN_PRIVATE_KEY;
+			} else if (!strcmp(v, "quark")) {
+				o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_QUARK_PRIVATE_KEY;
 			} else {
 				applog(APPLOG_ERROR, __func__,
 					"unknown value \"%s\" for %s", a
@@ -399,6 +401,8 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 				o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_FEATHERCOIN_PUBKEY_HASH;
 			} else if (!strcmp(v, "dogecoin")) {
 				o->public_key_prefix = BITCOIN_ADDRESS_PREFIX_DOGECOIN_PUBKEY_HASH;
+			} else if (!strcmp(v, "quark")) {
+				o->private_key_prefix = BITCOIN_ADDRESS_PREFIX_QUARK_PUBKEY_HASH;
 			} else {
 				applog(APPLOG_ERROR, __func__,
 					"unknown value \"%s\" for %s", a
@@ -474,6 +478,9 @@ int Bitcoin_GetAddressPrefixFromPrivateKeyPrefix(
 			return BITCOIN_ADDRESS_PREFIX_DOGECOIN_PUBKEY_HASH;
 		case BITCOIN_ADDRESS_PREFIX_DOGECOIN_TEST_PRIVATE_KEY :
 			return BITCOIN_ADDRESS_PREFIX_DOGECOIN_TEST_PUBKEY_HASH;
+
+		case BITCOIN_ADDRESS_PREFIX_QUARK_PRIVATE_KEY :
+			return BITCOIN_ADDRESS_PREFIX_QUARK_PUBKEY_HASH;
 
 		default :	
 			break;			

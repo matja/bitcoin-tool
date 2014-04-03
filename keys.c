@@ -9,7 +9,7 @@ reference : https://en.bitcoin.it/wiki/Secp256k1
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
 
-#include "ec.h"
+#include "keys.h"
 #include "base58.h"
 #include "applog.h"
 #include "hash.h"

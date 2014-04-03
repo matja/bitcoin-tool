@@ -181,5 +181,17 @@ OUTPUT=$($BITCOIN_TOOL \
 	--fix-base58check )
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
 # -----------------------------------------------------------------------------
+TEST="15 - quarkcoin compressed private key to address"
+EXPECTED="QUARKbonge6S9FyPKSa5HgxAsUercoU8CL"
+INPUT="7EoLLiHnKZnbvsgfS91NHBS5r11N1G2RxGaepGNH4gRVeDYRgWB"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key-wif \
+	--input-format base58check \
+	--output-type address \
+	--output-format base58check \
+	--input "${INPUT}" \
+	--fix-base58check )
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+# -----------------------------------------------------------------------------
 
 echo "all tests passed"
