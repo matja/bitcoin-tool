@@ -244,7 +244,7 @@ BitcoinResult Bitcoin_FixBase58Check(
 		change_chars == 1 ? "" : "up to ",
 		(int)change_chars,
 		change_chars == 1 ? "" : "s"
-	);	
+	);
 
 	if (required_fixed_output_size < input_size) {
 		applog(APPLOG_ERROR, __func__,
@@ -289,13 +289,13 @@ BitcoinResult Bitcoin_FixBase58Check(
 				if (result == BITCOIN_SUCCESS) {
 					memcpy(format_output, input, input_size);
 					format_output[input_size] = '\0';
-					applog(APPLOG_WARNING, __func__, 
+					applog(APPLOG_WARNING, __func__,
 						"from: %s", format_output
-					);				
+					);
 
 					memcpy(format_output, fixed_output, *fixed_output_size);
 					format_output[*fixed_output_size] = '\0';
-					applog(APPLOG_WARNING, __func__, 
+					applog(APPLOG_WARNING, __func__,
 						"  to: %s", format_output
 					);
 
@@ -303,12 +303,12 @@ BitcoinResult Bitcoin_FixBase58Check(
 					format_output[*fixed_output_size] = '\0';
 					for (j=0; j < r; j++) {
 						format_output[c.k[j]] = '^';
-					}					
-					applog(APPLOG_WARNING, __func__, 
+					}
+					applog(APPLOG_WARNING, __func__,
 						"      %s", format_output
 					);
 					done = 1;
-				}			
+				}
 
 				/* calculate next set of 'r' digits */
 				digits[0]++;
@@ -331,7 +331,7 @@ BitcoinResult Bitcoin_FixBase58Check(
 	}
 
 	if (!done) {
-		applog(APPLOG_WARNING, __func__, 
+		applog(APPLOG_WARNING, __func__,
 			"Failed to find any combination of changing the Base58Check input"
 			" that results in a valid checksum. %llu combinations were tried."
 			" (%f%% chance of error).",
@@ -341,7 +341,7 @@ BitcoinResult Bitcoin_FixBase58Check(
 		return BITCOIN_ERROR_CHECKSUM_FAILURE;
 	}
 
-	applog(APPLOG_WARNING, __func__, 
+	applog(APPLOG_WARNING, __func__,
 		"Base58Check input has been corrected after %llu combinations "
 		" (%f%% chance of error).",
 		(long long unsigned)change_count,

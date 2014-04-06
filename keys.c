@@ -151,6 +151,7 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 
 	/* public key appears to be valid by now, set the compression type */
 	public_key->compression = public_key_compression;
+	public_key->network_type = private_key->network_type;
 
 	/* free resources */
 	EC_POINT_clear_free(ec_public);

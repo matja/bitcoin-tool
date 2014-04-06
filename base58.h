@@ -124,7 +124,7 @@ BitcoinResult Bitcoin_DecodeBase58Check(
                output.
  *  @param[out] fixed_output_size Size in bytes of the fixed Base58Check output.
  *              This can be 0 for empty input, or error condition, up to the
- *              maximum specified in output_buffer_size.. 
+ *              maximum specified in output_buffer_size
  *  @param[out] output Pointer to write decoded output into.
  *  @param[out] output_buffer_size Size in bytes of the output buffer.
  *              This specifies the maximum number of bytes to be output.
@@ -155,7 +155,7 @@ BitcoinResult Bitcoin_FixBase58Check(
 	const char *input, size_t input_size,
 	unsigned change_chars,
 	unsigned insert_chars,
-	unsigned remove_chars	
+	unsigned remove_chars
 );
 
 #endif

@@ -52,12 +52,17 @@ it'll tell you off about that.
     --input-file    Specify input file name.  File size must be exactly what
                     is expected for the corresponding --input-type.
 
-
-    --private-key-prefix : Prefix byte of raw private key. Can be one of:
-                             (bitcoin|testnet|litecoin|dogecoin)
-
-    --public-key-prefix  : Prefix byte of raw public key. Can be one of:
-                             (bitcoin|testnet|litecoin|dogecoin)
+    --network       Set network type of raw keys.  Can be one of :
+        bitcoin
+        bitcoin-testnet
+        litecoin
+        litecoin-testnet
+        feathercoin
+        feathercoin-testnet
+        dogecoin
+        dogecoin-testnet
+        quarkcoin
+        quarkcoin-testnet
 
     --fix-base58check : Attempt to fix a Base58Check string by changing
                         characters until the checksum matches.
@@ -67,7 +72,7 @@ The `mini-private-key` input-type requires --input to be a 30 character ASCII
 string in valid mini private key format and --input-format to be `raw`.
 
 If raw keys are input and an address output is required, then the key type
-prefix must be specified via --private-key-prefix or --public-key-prefix.
+prefix must be specified via --network
 
 ### Examples
 
@@ -88,16 +93,16 @@ $ hexdump -e '32/1 "%02X" "\n"' key.bin
 ```
 
 Convert private key to WIF (Wallet Import Format).  Since it is a raw key, the
-network type prefix must be explicitally set (to bitcoin in this case) because
-it cannot be determined from the raw key :
+network type must be explicitally set (to bitcoin in this case) because it
+cannot be determined from the raw key :
 ```
 $ ./bitcoin-tool \
+    --network bitcoin \
     --input-type private-key \
     --input-format raw \
     --input-file key.bin \
     --output-type private-key-wif \
     --output-format base58check \
-    --private-key-prefix bitcoin \
     --public-key-compression uncompressed
 
 5JZjfs5wJv1gNkJXCmYpyj6VxciqPkwmK4yHW8zMmPN1PW7Hk7F
@@ -109,12 +114,12 @@ is no way to guess from a raw private key.
 Same again but compressed public key :
 ```
 $ ./bitcoin-tool \
+    --network bitcoin \
     --input-type private-key \
     --input-format raw \
     --input-file key.bin \
     --output-type private-key-wif \
     --output-format base58check \
-    --private-key-prefix bitcoin \
     --public-key-compression compressed
 
 KzXVLY4ni4yznz8LJwdUmNoGpUfebSxiakXRqcGAeuhihzaVe3Rz
@@ -132,8 +137,8 @@ $ ./bitcoin-tool \
     --input 5JZjfs5wJv1gNkJXCmYpyj6VxciqPkwmK4yHW8zMmPN1PW7Hk7F \
     --output-type address \
     --output-format base58check
-    
-1KYv3U6gWcxS5UfbNzP25eDEjd5PHHB5Gh    
+
+1KYv3U6gWcxS5UfbNzP25eDEjd5PHHB5Gh
 ```
 
 Show address for compressed WIF private key:
@@ -145,7 +150,7 @@ $ ./bitcoin-tool \
     --output-type address \
     --output-format base58check
 
-1Lm2DPqbhsutDkKoK9ZPPUkDKnGxQfpJLW    
+1Lm2DPqbhsutDkKoK9ZPPUkDKnGxQfpJLW
 ```
 This demonstrates why it is necessary to be careful when converting raw private
 keys to addresses; the same private key will (almost definitely) result in two
@@ -161,16 +166,16 @@ Now you can receive Bitcoins using the address above, but you will need to
 import the private key into your wallet at a later time in order to spend them
 (`bitcoind importprivkey`, for the official client), or at least be able to
 sign transactions with that key (not necessarily online).
- 
+
 #### Generate address from random private key
 ```
 ./bitcoin-tool \
+    --network bitcoin \
     --input-type private-key \
     --input-format raw \
     --input-file <(openssl rand 32) \
     --output-type address \
     --output-format base58check \
-    --private-key-prefix bitcoin \
     --public-key-compression compressed
 ```
 This outputs an address you can send Bitcoins to, if you want to loose them forever (because the private key is never output!).
@@ -190,7 +195,7 @@ So There.
     --input-format raw \
     --input-file <(echo -n sausage|openssl dgst -sha256 -binary) \
     --public-key-compression uncompressed \
-    --private-key-prefix bitcoin \
+    --network bitcoin \
     --output-type all
 
 address.hex:000511096ab078473911e0222fcbc3375314e2bab1

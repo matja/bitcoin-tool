@@ -34,84 +34,6 @@ enum BitcoinPublicKeyCompression {
 	BITCOIN_PUBLIC_KEY_UNCOMPRESSED
 };
 
-/*
-Define address prefix byte values.
-*/
-enum BitcoinAddressPrefix {
-
-/* never encoded in an address, used to signal that the prefix is not set */	
-	BITCOIN_ADDRESS_PREFIX_INVALID = -1,
-
-/*
-Bitcoin:
-https://en.bitcoin.it/wiki/List_of_address_prefixes
-
-Peercoin, Primecoin and Zetacoin use the same constants.
-*/
-	BITCOIN_ADDRESS_PREFIX_BITCOIN_PUBKEY_HASH = 0,
-	BITCOIN_ADDRESS_PREFIX_BITCOIN_SCRIPT_HASH = 5,
-	BITCOIN_ADDRESS_PREFIX_BITCOIN_PRIVATE_KEY = 128,
-	BITCOIN_ADDRESS_PREFIX_BITCOIN_TEST_PUBKEY_HASH = 111,
-	BITCOIN_ADDRESS_PREFIX_BITCOIN_TEST_SCRIPT_HASH = 196,
-	BITCOIN_ADDRESS_PREFIX_BITCOIN_TEST_PRIVATE_KEY = 239,
-
-/*
-Litecoin:
-public keys / script:
-https://github.com/litecoin-project/litecoin/blob/88e2a2e8988b89f905145bdc9af8c34028d0af90/src/base58.h#L275
-private keys:
-https://github.com/litecoin-project/litecoin/blob/88e2a2e8988b89f905145bdc9af8c34028d0af90/src/base58.h#L403
-*/
-	BITCOIN_ADDRESS_PREFIX_LITECOIN_PUBKEY_HASH = 48,
-	BITCOIN_ADDRESS_PREFIX_LITECOIN_SCRIPT_HASH = 5,
-	BITCOIN_ADDRESS_PREFIX_LITECOIN_PRIVATE_KEY = BITCOIN_ADDRESS_PREFIX_LITECOIN_PUBKEY_HASH + 128,
-	BITCOIN_ADDRESS_PREFIX_LITECOIN_TEST_PUBKEY_HASH = 111,
-	BITCOIN_ADDRESS_PREFIX_LITECOIN_TEST_SCRIPT_HASH = 196,
-	BITCOIN_ADDRESS_PREFIX_LITECOIN_TEST_PRIVATE_KEY = BITCOIN_ADDRESS_PREFIX_LITECOIN_TEST_PUBKEY_HASH + 128,
-
-/*
-Feathercoin:
-public keys / script:
-https://github.com/FeatherCoin/Feathercoin-0.8.5/blob/master-0.8/src/base58.h#L275
-private keys:
-https://github.com/FeatherCoin/Feathercoin-0.8.5/blob/master-0.8/src/base58.h#L403
-*/
-	BITCOIN_ADDRESS_PREFIX_FEATHERCOIN_PUBKEY_HASH = 14,
-	BITCOIN_ADDRESS_PREFIX_FEATHERCOIN_SCRIPT_HASH = 5,
-	BITCOIN_ADDRESS_PREFIX_FEATHERCOIN_PRIVATE_KEY = BITCOIN_ADDRESS_PREFIX_FEATHERCOIN_PUBKEY_HASH + 128,
-	BITCOIN_ADDRESS_PREFIX_FEATHERCOIN_TEST_PUBKEY_HASH = 111,
-	BITCOIN_ADDRESS_PREFIX_FEATHERCOIN_TEST_SCRIPT_HASH = 196,
-	BITCOIN_ADDRESS_PREFIX_FEATHERCOIN_TEST_PRIVATE_KEY = BITCOIN_ADDRESS_PREFIX_FEATHERCOIN_TEST_PUBKEY_HASH + 128,
-
-/*
-Dogecoin:
-public keys / script:
-https://github.com/dogecoin/dogecoin/blob/v1.5.0/src/base58.h#L276
-private keys:
-https://github.com/dogecoin/dogecoin/blob/v1.5.0/src/base58.h#L404
-*/
-	BITCOIN_ADDRESS_PREFIX_DOGECOIN_PUBKEY_HASH = 30,
-	BITCOIN_ADDRESS_PREFIX_DOGECOIN_SCRIPT_HASH = 22,
-	BITCOIN_ADDRESS_PREFIX_DOGECOIN_PRIVATE_KEY = BITCOIN_ADDRESS_PREFIX_DOGECOIN_PUBKEY_HASH + 128,
-	BITCOIN_ADDRESS_PREFIX_DOGECOIN_TEST_PUBKEY_HASH = 113,
-	BITCOIN_ADDRESS_PREFIX_DOGECOIN_TEST_SCRIPT_HASH = 196,
-	BITCOIN_ADDRESS_PREFIX_DOGECOIN_TEST_PRIVATE_KEY = BITCOIN_ADDRESS_PREFIX_DOGECOIN_TEST_PUBKEY_HASH + 128,
-
-/*
-Quark:
-public keys / script:
-https://github.com/MaxGuevara/quark/blob/v0.8.3.20/src/base58.h#L275
-private keys:
-https://github.com/MaxGuevara/quark/blob/v0.8.3.20/src/base58.h#L403
-*/
-	BITCOIN_ADDRESS_PREFIX_QUARK_PUBKEY_HASH = 58,
-	BITCOIN_ADDRESS_PREFIX_QUARK_SCRIPT_HASH = 9,
-	BITCOIN_ADDRESS_PREFIX_QUARK_PRIVATE_KEY = BITCOIN_ADDRESS_PREFIX_QUARK_PUBKEY_HASH + 128,
-	BITCOIN_ADDRESS_PREFIX_QUARK_TEST_PUBKEY_HASH = 119,
-	BITCOIN_ADDRESS_PREFIX_QUARK_TEST_SCRIPT_HASH = 199,
-	BITCOIN_ADDRESS_PREFIX_QUARK_TEST_PRIVATE_KEY = BITCOIN_ADDRESS_PREFIX_QUARK_TEST_PUBKEY_HASH + 128
-};
-
 struct BitcoinPublicKey
 {
 	unsigned char data[BITCOIN_PUBLIC_KEY_UNCOMPRESSED_SIZE];
@@ -124,7 +46,7 @@ coordinates).
 	enum BitcoinPublicKeyCompression compression;
 
 /* Network type	(prefix byte on addresses) */
-	enum BitcoinAddressPrefix prefix;
+	const struct BitcoinNetworkType *network_type;
 };
 
 /* private key defines */
@@ -165,7 +87,7 @@ uncompressed public key from this private key.
 	enum BitcoinPublicKeyCompression public_key_compression;
 
 /* Network type	(prefix byte on addresses) */
-	enum BitcoinAddressPrefix prefix;	
+	const struct BitcoinNetworkType *network_type;
 };
 
 /** @brief Check if a public key is not set.
