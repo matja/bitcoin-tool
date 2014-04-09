@@ -199,7 +199,7 @@ static void BitcoinTool_help(BitcoinTool *self)
 		"    (must be specified for raw/hex keys, should be auto for base58)\n"
 	);
 	fprintf(file,
-		"  --network-type   : Network type of keys, one of :\n"
+		"  --network        : Network type of keys, one of :\n"
 	);
 	Bitcoin_ListNetworks(file);
 
@@ -408,6 +408,12 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 				Bitcoin_ListNetworks(stderr);
 				return 0;
 			}
+			if (o->network_type) {
+				applog(APPLOG_ERROR, __func__,
+					"--network specified multiple times, please use only once"
+				);
+				return 0;
+			}
 			v = argv[i];
 			o->network_type = Bitcoin_GetNetworkTypeByName(v);
 			if (o->network_type == NULL) {
@@ -439,6 +445,7 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			}
 		} else if (!strcmp(a, "--help")) {
 			BitcoinTool_help(self);
+			return 0;
 		} else {
 			applog(APPLOG_ERROR, __func__, "unknown option \"%s\"", a);
 			return 0;
@@ -479,6 +486,7 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 	}
 
 	if (errors) {
+		applog(APPLOG_ERROR, __func__, "Use --help for more information.");
 		return 0;
 	}
 
@@ -588,7 +596,7 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 					if (self->private_key.network_type == NULL) {
 						applog(APPLOG_ERROR, __func__,
 							"Network type is not specified, please set using"
-							" --network-type option"
+							" --network option"
 						);
 						return BITCOIN_ERROR_PRIVATE_KEY_INVALID_FORMAT;
 					}
@@ -663,7 +671,7 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 						applog(APPLOG_ERROR, __func__,
 							"Raw public key has no network prefix and it is unsafe"
 							" to assume one.  Please explicitally specify prefix using"
-							" --network-type option."
+							" --network option."
 						);
 						return BITCOIN_ERROR_IMPOSSIBLE_CONVERSION;
 					}
