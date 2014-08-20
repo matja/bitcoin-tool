@@ -96,6 +96,25 @@ https://github.com/MaxGuevara/quark/blob/v0.8.3.20/src/base58.h#L403
 		.public_key_prefix       = 119,
 		.script_prefix           = 199,
 		.private_key_prefix      = 119+128
+	},
+/*
+Darkcoin:
+public keys / script:
+https://github.com/darkcoinproject/darkcoin/blob/master/src/base58.h#L275
+private keys:
+https://github.com/darkcoinproject/darkcoin/blob/master/src/base58.h#L403
+*/
+	{
+		.name                    = "darkcoin",
+		.public_key_prefix       = 76,
+		.script_prefix           = 9,
+		.private_key_prefix      = 76+128
+	},
+	{
+		.name                    = "darkcoin-testnet",
+		.public_key_prefix       = 111,
+		.script_prefix           = 196,
+		.private_key_prefix      = 111+128
 	}
 };
 
