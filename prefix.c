@@ -115,6 +115,25 @@ https://github.com/darkcoinproject/darkcoin/blob/master/src/base58.h#L403
 		.public_key_prefix       = 111,
 		.script_prefix           = 196,
 		.private_key_prefix      = 111+128
+	},
+/*
+Jumbucks:
+public keys / script:
+https://github.com/jyap808/coinmarketscoin/blob/master/src/base58.h#L276
+private keys:
+https://github.com/jyap808/coinmarketscoin/blob/master/src/base58.h#L425
+*/
+	{
+		.name                    = "jumbucks",
+		.public_key_prefix       = 43,
+		.script_prefix           = 105,
+		.private_key_prefix      = 43+128
+	},
+	{
+		.name                    = "jumbucks-testnet",
+		.public_key_prefix       = 107,
+		.script_prefix           = 176,
+		.private_key_prefix      = 107+128
 	}
 };
 
