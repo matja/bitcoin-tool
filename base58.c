@@ -6,7 +6,13 @@
 
 #include <string.h>
 #include <stdlib.h>
+
+#if OS_FAMILY == Windows
+#include <malloc.h>
+#else
 #include <alloca.h>
+#endif
+
 #include <openssl/bn.h>
 
 /* base58 is 0-9,A-Z,a-z (62 chars), but with the 0,I,O, and l chars removed,

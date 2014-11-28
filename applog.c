@@ -4,6 +4,23 @@
 #include <time.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
+
+static struct tm *windows_localtime_r(const time_t *pt, struct tm *ptm)
+{
+	struct tm *tm = localtime(pt);
+	memcpy(ptm, tm, sizeof(*ptm));
+	return ptm;
+}
+
+static struct tm *portable_localtime_r(const time_t *pt, struct tm *ptm)
+{
+#if OS_FAMILY == Windows
+	return windows_localtime_r(pt, ptm);
+#else
+	return localtime_r(pt, ptm);
+#endif
+}
 
 void applog(enum ApplogLevel level, const char *function_name, const char *format, ...)
 {
@@ -26,7 +43,7 @@ void applog(enum ApplogLevel level, const char *function_name, const char *forma
 			struct tm tm_localtime;
 
 			time_now = time(NULL);
-			localtime_r(&time_now, &tm_localtime);
+			portable_localtime_r(&time_now, &tm_localtime);
 			strftime(time_string, sizeof(time_string)-1, "%Y-%m-%dT%H:%M:%S", &tm_localtime);
 			fprintf(file, "%s|%s|", time_string, function_name);
 			vfprintf(file, format, args);
