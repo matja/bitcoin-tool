@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 BITCOIN_TOOL="./bitcoin-tool"
 
