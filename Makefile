@@ -3,7 +3,7 @@
 DISABLE_WARNINGS = -Wno-long-long
 
 CFLAGS = -ansi -Wall -ggdb -O2 $(DISABLE_WARNINGS)
-LIBS = -lrt
+LIBS = -lrt -lssl -lcrypto
 
 OBJECTS = main.o keys.o hash.o base58.o result.o combination.o applog.o \
 	utility.o prefix.o
@@ -16,4 +16,4 @@ clean :
 	@-rm bitcoin-tool $(OBJECTS)
 
 bitcoin-tool : $(OBJECTS)
-	$(CC) -o $@ $^ -lcrypto
+	$(CC) -o $@ $^ $(LIBS)

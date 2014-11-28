@@ -8,6 +8,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <assert.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
 #include "hash.h"
 #include "keys.h"
@@ -1349,6 +1351,10 @@ static void BitcoinTool_destroy(BitcoinTool *self)
 BitcoinTool *BitcoinTool_create(void)
 {
 	BitcoinTool *self = (BitcoinTool *)calloc(1, sizeof(*self));
+
+	/* load openssl error strings for error reporting */
+	ERR_load_crypto_strings();
+	SSL_load_error_strings();
 
 	self->help = BitcoinTool_help;
 	self->parseOptions = BitcoinTool_parseOptions;
