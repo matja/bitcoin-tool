@@ -80,31 +80,6 @@ void Bitcoin_OutputHex(const void *source, size_t source_size)
 	}
 }
 
-void Bitcoin_OutputHexPretty(const void *source, size_t source_size)
-{
-	const char *delim = "";
-	size_t i;
-	for (i=0; i < source_size; i++) {
-		unsigned m = i % 16;
-		if (!m) {
-			if (!i) {
-				delim = "";
-			} else {
-				delim = "\n";
-			}
-		} else if (m == 8) {
-			delim = "-";
-		} else {
-			delim = " ";
-		}
-
-		printf("%s%02x", delim,
-			((const unsigned char *)source)[i]
-		);
-	}
-	printf("\n");
-}
-
 void Bitcoin_ReverseBytes(void *buffer, size_t size)
 {
 	char *start = (char *)buffer;

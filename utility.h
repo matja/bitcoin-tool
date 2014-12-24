@@ -67,14 +67,6 @@ BitcoinResult Bitcoin_EncodeHex(
  */
 void Bitcoin_OutputHex(const void *source, size_t source_size);
 
-/** @brief Output a formatted hex representation of a pointer to byte values,
- *         in aligned rows of 16 bytes, to standard output.
- *
- *  @param[in] source Pointer to byte values.
- *  @param[in] source_size Number of bytes to output.
- */
-void Bitcoin_OutputHexPretty(const void *source, size_t source_size);
-
 /** @brief Reverse the bytes in a buffer.
  *         eg: {1,2,3,0} will become {0,3,2,1}
  *
