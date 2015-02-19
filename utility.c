@@ -1,4 +1,5 @@
 #include "utility.h"
+#include "applog.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -27,14 +28,30 @@ BitcoinResult Bitcoin_DecodeHex(void *output, size_t output_size,
 )
 {
 	unsigned char *output_bytes = (unsigned char *)output;
+	const char *source_copy = source;
 
 	*decoded_output_size = 0;
 
 	while (source_size) {
 		uint_fast8_t high, low;
 
-		if (!Bitcoin_DecodeHexChar(&high, *source++)) { return BITCOIN_ERROR_INVALID_FORMAT; }
-		if (!Bitcoin_DecodeHexChar(&low, *source++)) { return BITCOIN_ERROR_INVALID_FORMAT; }
+		if (!Bitcoin_DecodeHexChar(&high, *source)) {
+			applog(APPLOG_ERROR, __func__,
+				"Invalid character (ASCII=%u) at offset %u",
+				(unsigned)*source, source - source_copy
+			);
+			return BITCOIN_ERROR_INVALID_FORMAT;
+		}
+		source++;
+
+		if (!Bitcoin_DecodeHexChar(&low, *source)) {
+			applog(APPLOG_ERROR, __func__,
+				"Invalid character (ASCII=%u) at offset %u",
+				(unsigned)*source, source - source_copy
+			);
+			return BITCOIN_ERROR_INVALID_FORMAT;
+		}
+		source++;
 
 		*output_bytes++ = (high << 4) | low;
 		source_size -= 2;

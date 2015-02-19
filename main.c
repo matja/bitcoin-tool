@@ -88,6 +88,9 @@ struct BitcoinToolOptions {
 
 	/* set the network type prefix of addresses, public keys and private keys */
 	const struct BitcoinNetworkType *network_type;
+
+	/* in batch mode we read input from each line of --input-file */
+	int batch;
 };
 
 struct BitcoinTool {
@@ -120,6 +123,8 @@ struct BitcoinTool {
 
 	char output_text[256]; /* raw output type converted to output format */
 	size_t output_text_size;
+
+	FILE *input_file_handle;
 
 	int (*parseOptions)(struct BitcoinTool *self, int argc, char *argv[]);
 	void (*help)(struct BitcoinTool *self);
@@ -191,7 +196,8 @@ static void BitcoinTool_help(BitcoinTool *self)
 
 	fprintf(file,
 		"  --input         : Specify input data on command line\n"
-		"  --input-file    : Specify file name to read for input\n"
+		"  --input-file    : Specify file name to read for input ('-' for stdin)\n"
+		"  --batch         : Read multiple lines of input from --input-file\n"
 	);
 	fprintf(file,
 		"  --public-key-compression : Can be one of :\n"
@@ -445,6 +451,8 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 				);
 				return 0;
 			}
+		} else if (!strcmp(a, "--batch")) {
+			o->batch = 1;
 		} else if (!strcmp(a, "--help")) {
 			BitcoinTool_help(self);
 			return 0;
@@ -454,9 +462,30 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 		}
 	}
 
-	if (!o->input && !o->input_file) {
-		applog(APPLOG_ERROR, __func__, "Either --input <text> or --input-file <filename> must be specified.");
-		errors++;
+	if (o->batch) {
+		if (o->input) {
+			applog(APPLOG_ERROR, __func__,
+				"--batch and --input should not be specified at the same time."
+				" In batch mode, use --input-file to specify the name of the"
+				" file (or '-' or stdin) to read lines of input from."
+			);
+			errors++;
+		}
+		if (!o->input_file) {
+			applog(APPLOG_ERROR, __func__,
+				"If --batch is specified then --input-file must be used to"
+				" specify the name of the file (or '-' or stdin) to read lines"
+				" of input from."
+			);
+			errors++;
+		}
+	} else {
+		if (!o->input && !o->input_file) {
+			applog(APPLOG_ERROR, __func__,
+				"Either --input <text> or --input-file <filename>"
+				" must be specified.");
+			errors++;
+		}
 	}
 
 	if (!o->input_type) {
@@ -731,13 +760,23 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 {
 	self->output_text_size = sizeof(self->output_text);
 
-	/* get input data from file or from command line option */
-	if (self->options.input_file) {
-		FILE *file = NULL;
-		int bytes_read = 0;
+	if (self->options.batch) {
+		/* in batch mode we open the file only once and read as much as
+		   we can out of it, splitting it into line-delimited text
+		   (for variable-sized input), or fixed sized fields, when we know
+		   the field size. */
 
-		file = fopen(self->options.input_file, "rb");
-		if (!file) {
+		char *fgets_result = NULL;
+
+		if (!self->input_file_handle) {
+			if (strcmp(self->options.input_file, "-") == 0) {
+				self->input_file_handle = stdin;
+			} else {
+				self->input_file_handle = fopen(self->options.input_file, "rb");
+			}
+		}
+
+		if (!self->input_file_handle) {
 			applog(APPLOG_ERROR, __func__, "Failed to open file [%s] (%s)",
 				self->options.input_file,
 				strerror(errno)
@@ -745,35 +784,73 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 			return BITCOIN_ERROR_FILE;
 		}
 
-		/* allow space for NUL char, so we can use it as a string later */
-		bytes_read = fread(self->input, 1, sizeof(self->input) - 1, file);
-		if (bytes_read <= 0) {
-			applog(APPLOG_ERROR, __func__, "Failed to read file [%s] (%s)",
-				self->options.input_file,
-				strerror(errno)
-			);
-			fclose(file);
+		memset(self->input, 0, sizeof(self->input));
+		fgets_result = fgets(self->input, sizeof(self->input) - 1,
+			self->input_file_handle);
+		if (fgets_result == NULL) {
+			/* error or EOF */
 			return BITCOIN_ERROR_FILE;
 		}
 
-		fclose(file);
-
-		self->input_size = bytes_read;
-	} else if (self->options.input) {
-		self->input_size = strlen(self->options.input);
-		if (self->input_size >= sizeof(self->input)) {
-			applog(APPLOG_ERROR, __func__,
-				"--input value too large for internal buffer or any expected type"
-			);
-			return BITCOIN_ERROR;
+		self->input_size = strlen(self->input);
+		if (self->input_size > 0) {
+			/* remove newline character */
+			if (self->input[self->input_size - 1] == '\n') {
+				self->input[self->input_size - 1] = '\0';	
+				self->input_size--;
+			}
 		}
-		strncpy(self->input, self->options.input, self->input_size);
+
+	} else {
+		/* get input data _once_ from file or from command line option */
+		if (self->options.input_file) {
+			FILE *file = NULL;
+			int bytes_read = 0;
+
+			if (strcmp(self->options.input_file, "-") == 0) {
+				file = stdin;
+			} else {
+				file = fopen(self->options.input_file, "rb");
+				if (!file) {
+					applog(APPLOG_ERROR, __func__, "Failed to open file [%s] (%s)",
+						self->options.input_file,
+						strerror(errno)
+					);
+					return BITCOIN_ERROR_FILE;
+				}
+			}
+
+			/* allow space for NUL char, so we can use it as a string later */
+			bytes_read = fread(self->input, 1, sizeof(self->input) - 1, file);
+			if (bytes_read <= 0) {
+				applog(APPLOG_ERROR, __func__, "Failed to read file [%s] (%s)",
+					self->options.input_file,
+					strerror(errno)
+				);
+				fclose(file);
+				return BITCOIN_ERROR_FILE;
+			}
+
+			fclose(file);
+
+			self->input_size = bytes_read;
+		} else if (self->options.input) {
+			self->input_size = strlen(self->options.input);
+			if (self->input_size >= sizeof(self->input)) {
+				applog(APPLOG_ERROR, __func__,
+					"--input value too large for internal buffer or any expected type"
+				);
+				return BITCOIN_ERROR;
+			}
+			strncpy(self->input, self->options.input, self->input_size);
+		}
 	}
 
 	/* check if we have any input we can work with */
 	if (self->input_size == 0) {
 		applog(APPLOG_ERROR, __func__,
-			"No input data specified, use --input or --input-file to specify input data."
+			"No input data specified, use --input or --input-file to specify"
+			" input data."
 		);
 		return BITCOIN_ERROR;
 	}
@@ -1297,23 +1374,20 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 	}
 
 	/* output a newline for clarity if we're on a TTY */
-	if (isatty(fileno(stdin))) {
+	if (self->options.batch || isatty(fileno(stdin))) {
 		putchar('\n');
 	}
 
 	return BITCOIN_SUCCESS;
 }
 
+static int Bitcoin_HasMoreInput(BitcoinTool *self)
+{
+	return self->options.batch;
+}
+
 static int BitcoinTool_run(BitcoinTool *self)
 {
-	if (Bitcoin_ParseInput(self) != BITCOIN_SUCCESS) {
-		return 0;
-	}
-
-	if (Bitcoin_CheckInputSize(self) != BITCOIN_SUCCESS) {
-		return 0;
-	}
-
 	/* has user asked to override public key compression? */
 	switch (self->options.public_key_compression) {
 		/* user wants compressed public key */
@@ -1332,13 +1406,23 @@ static int BitcoinTool_run(BitcoinTool *self)
 			break;
 	}
 
-	if (Bitcoin_ConvertInputToOutput(self) != BITCOIN_SUCCESS) {
-		return 0;
-	}
+	do {
+		if (Bitcoin_ParseInput(self) != BITCOIN_SUCCESS) {
+			return 0;
+		}
 
-	if (Bitcoin_WriteOutput(self) != BITCOIN_SUCCESS) {
-		return 0;
-	}
+		if (Bitcoin_CheckInputSize(self) != BITCOIN_SUCCESS) {
+			return 0;
+		}
+
+		if (Bitcoin_ConvertInputToOutput(self) != BITCOIN_SUCCESS) {
+			return 0;
+		}
+
+		if (Bitcoin_WriteOutput(self) != BITCOIN_SUCCESS) {
+			return 0;
+		}
+	} while (Bitcoin_HasMoreInput(self));
 
 	return 1;
 }
