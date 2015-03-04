@@ -1,12 +1,26 @@
-Simple tool in C to convert Bitcoin keys to addresses, and various other
-type conversions.
+## Introduction
+bitcoin-tool is a simple tool written in C to convert Bitcoin keys to addresses,
+and various other conversions of keys.
 
 Disclaimer: THIS CODE IS EXPERIMENTAL, IT IS PROBABLY BUGGY. PLEASE DO NOT
 TRUST YOUR BITCOINS WITH IT.  IT IS EASY TO MAKE AN IRREVERSIBLE MISTAKE AND
 SEND YOUR BITCOINS TO A ADDRESS WITH NO WAY OF GETTING THEM BACK.
 
-Compile with `make`.
+## Build Instructions
+Run `make test` to compile and run all tests.
 
+### Requirements
+* A C compiler
+* OpenSSL headers and libraries (with elliptic curve support)
+
+## Platform-specific Instructions
+### Gentoo Linux
+Gentoo by default enables the `bindist` flag on the openssl package, which disables
+elliptic curve support, presumably because of software patent concerns.  Since
+the `openssh` package also has `bindist` USE-flag set, the USE-flag must be disabled
+in both, then re-emerged to get an OpenSSL library with elliptic curve support.
+
+## Description
 I created this because I couldn't find an offline tool or library able
 to create addresses from Bitcoin private keys, and as a learning exercise in
 Bitcoin address formats and ECDSA.
@@ -20,54 +34,67 @@ mistake.
 
 I've tried to add as much sanity checking as possible, to remove the scope
 for errors and misinterpretation of data.  This sometimes boreders on the
-annoying: if the file for --input-file contains more data than is expected,
-it'll tell you off about that.
+pedantic and annoying.  For example, if the file for `--input-file` contains
+more data than is expected, then it'll refuse to process it at all.
 
 ### Command-line options
 
-    --input-type : Input data type, can be one of :
-        mini-private-key : 30 character Casascius mini private key.
-        private-key      : 32 byte ECDSA private key
-        private-key-wif  : 37/38 byte ECDSA private key in wallet import format
-        public-key       : 33/65 byte ECDSA public key
-        public-key-sha   : 32 byte SHA256(public key) hash
-        public-key-rmd   : 20 byte RIPEMD160(SHA256(public key)) hash
-        address          : 21 byte Bitcoin address (prefix + hash)
-
-    --input-format : Input data format, can be one of :
-        raw             : raw binary data
-        hex             : hexadecimal encoded
-        base58          : Base58 encoded (almost never used in the wild)
-        base58check     : Base58Check encoded
-
-    --output-type   Output data type, can be any one of those used for
-                    --input-type, or additionally :
-        all             : all output types, as type:value pairs, most of which
-                          are never used, probably for good reason.
-
-    --output-format Output data format, can be any one of those used for
-                    --input-format
-
-    --input         Specify input data on command line
-    --input-file    Specify input file name.  File size must be exactly what
-                    is expected for the corresponding --input-type.
-
-    --network       Set network type of raw keys.  Can be one of :
-        bitcoin
-        bitcoin-testnet
-        litecoin
-        litecoin-testnet
-        feathercoin
-        feathercoin-testnet
-        dogecoin
-        dogecoin-testnet
-        quarkcoin
-        quarkcoin-testnet
-
-    --fix-base58check : Attempt to fix a Base58Check string by changing
-                        characters until the checksum matches.
-    --fix-base58check-change-chars : Maximum number of characters to change (default=3)
-
+  --input-type : Input data type, must be one of :
+      mini-private-key : 30 character Casascius mini private key
+      private-key      : 32 byte ECDSA private key
+      private-key-wif  : 33/34 byte ECDSA WIF private key
+      public-key       : 33/65 byte ECDSA public key
+      public-key-sha   : 32 byte SHA256(public key) hash
+      public-key-rmd   : 20 byte RIPEMD160(SHA256(public key)) hash
+      address          : 21 byte Bitcoin address (prefix + hash)
+  --input-format : Input data format, must be one of :
+      raw         : Raw binary
+      hex         : Hexadecimal encoded
+      base58      : Base58 encoded
+      base58check : Base58Check encoded (most common)
+  --output-type  : Output data type, must be one of :
+      all              : All output types, as type:value pairs, most of which
+                         are never commonly used, probably for good reason.
+      mini-private-key : 30 character Casascius mini private key
+      private-key      : 32 byte ECDSA private key
+      private-key-wif  : 33/34 byte ECDSA WIF private key
+      public-key       : 33/65 byte ECDSA public key
+      public-key-sha   : 32 byte SHA256(public key) hash
+      public-key-rmd   : 20 byte RIPEMD160(SHA256(public key)) hash
+      address          : 21 byte Bitcoin address (prefix + hash)
+  --output-format : Output data format, must be one of :
+      raw         : Raw binary
+      hex         : Hexadecimal encoded
+      base58      : Base58 encoded
+      base58check : Base58Check encoded (most common)
+  --input         : Specify input data on command line
+  --input-file    : Specify file name to read for input ('-' for stdin)
+  --batch         : Read multiple lines of input from --input-file
+  --public-key-compression : Can be one of :
+      auto         : determine compression from base58 private key (default)
+      compressed   : force compressed public key
+      uncompressed : force uncompressed public key
+    (must be specified for raw/hex keys, should be auto for base58)
+  --network        : Network type of keys, one of :
+      bitcoin
+      bitcoin-testnet
+      litecoin
+      litecoin-testnet
+      feathercoin
+      feathercoin-testnet
+      dogecoin
+      dogecoin-testnet
+      quarkcoin
+      quarkcoin-testnet
+      darkcoin
+      darkcoin-testnet
+      jumbucks
+      jumbucks-testnet
+  --fix-base58check : Attempt to fix a Base58Check string by changing
+                      characters until the checksum matches.
+  --fix-base58check-change-chars : Maximum number of characters to change
+                                   (default=3)
+    
 The `mini-private-key` input-type requires --input to be a 30 character ASCII
 string in valid mini private key format and --input-format to be `raw`.
 
@@ -216,4 +243,27 @@ private-key-wif.base58check:5JBmuBc64pVrKLyDc8ktyXJmAeEwKQogn6jsk6taeq8zRMtGZrE
 private-key.hex:30caae2fcb7c34ecadfddc45e0a27e9103bd7cfc87730d7818cc096b1266a683
 private-key.base58:4HTpd7gVSeVJDurhJKYGEYyFWMZRCNjSnXaEcan9K6Gz
 private-key.base58check:NVKW9zzMvs4LawZwJztUZdx3R27Gwc4Hg6WvqqQxHMFkbn3Wz
+```
+
+#### Batch processing
+
+You can read multiple lines of input from a text file and process individually
+with the `--batch` option.  This requires the `--input-file` option to be
+set.  This will be faster than spawning a new instance of bitcoin-tool for
+each line of a line - from a shell script, for example.
+
+**Generate 1000 random private keys in hex format**
+`keys=1000 ; openssl rand $[32*keys] | xxd -p -c32 > hexkeys`
+
+**Convert all the private keys to addresses**
+```
+./bitcoin-tool \
+--batch \
+--input-file hexkeys \
+--input-format hex \
+--input-type private-key \
+--network bitcoin \
+--public-key-compression compressed \
+--output-type address \
+--output-format base58check
 ```
