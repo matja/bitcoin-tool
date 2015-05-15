@@ -38,7 +38,7 @@ pedantic and annoying.  For example, if the file for `--input-file` contains
 more data than is expected, then it'll refuse to process it at all.
 
 ### Command-line options
-
+```
   --input-type : Input data type, must be one of :
       mini-private-key : 30 character Casascius mini private key
       private-key      : 32 byte ECDSA private key
@@ -94,7 +94,7 @@ more data than is expected, then it'll refuse to process it at all.
                       characters until the checksum matches.
   --fix-base58check-change-chars : Maximum number of characters to change
                                    (default=3)
-    
+```
 The `mini-private-key` input-type requires --input to be a 30 character ASCII
 string in valid mini private key format and --input-format to be `raw`.
 
@@ -266,4 +266,4 @@ each line of a line - from a shell script, for example.
 --public-key-compression compressed \
 --output-type address \
 --output-format base58check
-```
+
