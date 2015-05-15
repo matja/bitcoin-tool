@@ -985,7 +985,7 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 			Bitcoin_SHA256(&hash, input_raw, BITCOIN_MINI_PRIVATE_KEY_SIZE);
 			memcpy(self->private_key.data, hash.data, BITCOIN_SHA256_SIZE);
 
-			/* since the comression type is always uncompressed, we can set
+			/* since the compression type is always uncompressed, we can set
 			   that too, and we can produce a valid WIF key */
 			self->private_key.public_key_compression = BITCOIN_PUBLIC_KEY_UNCOMPRESSED;
 
@@ -1004,7 +1004,7 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 				);
 			}
 
-			/* we have a valid pirvate key */
+			/* we have a valid private key */
 			self->private_key_set = 1;
 
 			/* we have a valid WIF private key */
