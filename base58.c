@@ -1,11 +1,14 @@
+#define _POSIX_C_SOURCE 200112L /* snprintf */
+
 #include "base58.h"
 #include "hash.h"
 #include "utility.h"
 #include "applog.h"
 #include "combination.h"
 
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #if OS_FAMILY == Windows
 #include <malloc.h>
@@ -129,6 +132,7 @@ BitcoinResult Bitcoin_DecodeBase58(
 	unsigned leading_zeros = 0;
 	unsigned bn_bytes_req = 0;
 	unsigned bn_bytes_wrote = 0;
+	int retval = 0;
 
 	BIGNUM base, m1, m2, result, sub;
 	BN_CTX *bn_ctx;
@@ -155,8 +159,16 @@ BitcoinResult Bitcoin_DecodeBase58(
 	while (pc >= pzc) {
 		int v = digits[(unsigned)*pc];
 		if (v == -1) {
-			printf("%s: invalid character (%u)\n", __func__, (unsigned)*pc);
-			return 0;
+			char char_string[32];
+			if (*pc >= ' ' && *pc <= '~') {
+				snprintf(char_string, sizeof(char_string), "'%c' = ", (char)*pc);
+			} else {
+				char_string[0] = '\0';
+			}
+			applog(APPLOG_ERROR, __func__,
+				"Invalid character (%sASCII %u)", char_string, (unsigned)*pc);
+			retval = BITCOIN_ERROR_INVALID_FORMAT;
+			goto done;
 		}
 		BN_set_word(&m1, v);
 		BN_mul(&sub, &m1, &m2, bn_ctx);
@@ -168,12 +180,18 @@ BitcoinResult Bitcoin_DecodeBase58(
 	bn_bytes_req = BN_num_bytes(&result);
 
 	if (bn_bytes_req > output_buffer_size) {
-		printf("%s: bn_bytes_req too large (%u)\n", __func__, bn_bytes_req);
+		applog(APPLOG_ERROR, __func__,
+			"bn_bytes_req too large (%u)", bn_bytes_req);
 		/* output buffer too small, failure */
-		return BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL;
+		retval = BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL;
+		goto done;
 	}
 
 	bn_bytes_wrote = BN_bn2bin(&result, output+leading_zeros);
+	retval = BITCOIN_SUCCESS;
+
+	/* clean up resources */
+done:
 	BN_CTX_free(bn_ctx);
 	BN_free(&base);
 	BN_free(&m1);
@@ -181,9 +199,11 @@ BitcoinResult Bitcoin_DecodeBase58(
 	BN_free(&result);
 	BN_free(&sub);
 
-	*decoded_output_size = bn_bytes_wrote+leading_zeros;
+	if (retval == BITCOIN_SUCCESS) {
+		*decoded_output_size = bn_bytes_wrote + leading_zeros;
+	}
 
-	return BITCOIN_SUCCESS;
+	return retval;
 }
 
 BitcoinResult Bitcoin_DecodeBase58Check(
@@ -214,7 +234,6 @@ BitcoinResult Bitcoin_DecodeBase58Check(
 		/* checksums didn't match, failure */
 		return BITCOIN_ERROR_CHECKSUM_FAILURE;
 	}
-
 
 	*decoded_output_size = temp_decoded_output_size -
 		BITCOIN_BASE58CHECK_CHECKSUM_SIZE;

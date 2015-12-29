@@ -19,7 +19,8 @@ typedef enum BitcoinResult {
 	BITCOIN_ERROR_INVALID_FORMAT,
 	BITCOIN_ERROR_IMPOSSIBLE_CONVERSION,
 	BITCOIN_ERROR_FILE,
-	BITCOIN_ERROR_LIBRARY_FAILURE
+	BITCOIN_ERROR_LIBRARY_FAILURE,
+	BITCOIN_ERROR_END_OF_FILE
 } BitcoinResult;
 
 /** @brief Return the text message corresponding to a BitcoinResult.

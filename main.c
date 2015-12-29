@@ -91,6 +91,10 @@ struct BitcoinToolOptions {
 
 	/* in batch mode we read input from each line of --input-file */
 	int batch;
+
+	/* in batch mode we can set a flag to ignore invalid inputs and continue
+	   with the next line */
+	int ignore_input_errors;
 };
 
 struct BitcoinTool {
@@ -195,9 +199,10 @@ static void BitcoinTool_help(BitcoinTool *self)
 	BitcoinTool_ListOutputFormats(file);
 
 	fprintf(file,
-		"  --input         : Specify input data on command line\n"
-		"  --input-file    : Specify file name to read for input ('-' for stdin)\n"
-		"  --batch         : Read multiple lines of input from --input-file\n"
+		"  --input               : Specify input data on command line\n"
+		"  --input-file          : Specify file name to read for input ('-' for stdin)\n"
+		"  --batch               : Read multiple lines of input from --input-file\n"
+		"  --ignore-input-errors : Continue processing batch input if errors are found.\n"
 	);
 	fprintf(file,
 		"  --public-key-compression : Can be one of :\n"
@@ -453,6 +458,8 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			}
 		} else if (!strcmp(a, "--batch")) {
 			o->batch = 1;
+		} else if (!strcmp(a, "--ignore-input-errors")) {
+			o->ignore_input_errors = 1;
 		} else if (!strcmp(a, "--help")) {
 			BitcoinTool_help(self);
 			return 0;
@@ -784,7 +791,12 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 			return BITCOIN_ERROR_FILE;
 		}
 
+		if (feof(self->input_file_handle)) {
+			return BITCOIN_ERROR_END_OF_FILE;
+		}
+
 		memset(self->input, 0, sizeof(self->input));
+
 		fgets_result = fgets(self->input, sizeof(self->input) - 1,
 			self->input_file_handle);
 		if (fgets_result == NULL) {
@@ -796,7 +808,7 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 		if (self->input_size > 0) {
 			/* remove newline character */
 			if (self->input[self->input_size - 1] == '\n') {
-				self->input[self->input_size - 1] = '\0';	
+				self->input[self->input_size - 1] = '\0';
 				self->input_size--;
 			}
 		}
@@ -1073,7 +1085,8 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 				input_raw+BITCOIN_PRIVATE_KEY_WIF_VERSION_SIZE,
 				BITCOIN_PRIVATE_KEY_SIZE
 			);
-			self->private_key.network_type = Bitcoin_GetNetworkTypeByPrivateKeyPrefix(input_raw[0]);
+			self->private_key.network_type =
+				Bitcoin_GetNetworkTypeByPrivateKeyPrefix(input_raw[0]);
 			if (self->private_key.network_type == NULL) {
 				applog(APPLOG_ERROR, __func__,
 					"Unknown prefix byte in WIF private key [%u]",
@@ -1407,8 +1420,16 @@ static int BitcoinTool_run(BitcoinTool *self)
 	}
 
 	do {
-		if (Bitcoin_ParseInput(self) != BITCOIN_SUCCESS) {
-			return 0;
+		int result = Bitcoin_ParseInput(self);
+
+		if (result == BITCOIN_ERROR_END_OF_FILE) {
+			break;
+		} else if (result != BITCOIN_SUCCESS) {
+			if (self->options.ignore_input_errors == 0) {
+				return 0;
+			} else {
+				continue;
+			}
 		}
 
 		if (Bitcoin_CheckInputSize(self) != BITCOIN_SUCCESS) {
