@@ -134,6 +134,25 @@ https://github.com/jyap808/coinmarketscoin/blob/master/src/base58.h#L425
 		.public_key_prefix       = 107,
 		.script_prefix           = 176,
 		.private_key_prefix      = 107+128
+	},
+/*
+Peercoin:
+public keys / script:
+https://github.com/ppcoin/ppcoin/blob/v0.5.2ppc/src/base58.h#L280
+private keys:
+https://github.com/ppcoin/ppcoin/blob/v0.5.2ppc/src/base58.h#L428
+*/
+	{
+		.name                    = "peercoin",
+		.public_key_prefix       = 55,
+		.script_prefix           = 117,
+		.private_key_prefix      = 55+128
+	},
+	{
+		.name                    = "peercoin-testnet",
+		.public_key_prefix       = 111,
+		.script_prefix           = 196,
+		.private_key_prefix      = 111+128
 	}
 };
 
