@@ -353,7 +353,10 @@ BitcoinResult Bitcoin_FixBase58Check(
 			}
 		} while (!done && Combination_next(&c));
 		Combination_destroy(&c);
+		free(digits);
 	}
+
+	free(format_output);
 
 	if (!done) {
 		applog(APPLOG_WARNING, __func__,
