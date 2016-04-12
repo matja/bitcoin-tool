@@ -153,6 +153,24 @@ https://github.com/ppcoin/ppcoin/blob/v0.5.2ppc/src/base58.h#L428
 		.public_key_prefix       = 111,
 		.script_prefix           = 196,
 		.private_key_prefix      = 111+128
+	},
+/*
+Namecoin:
+public keys / script / private keys:
+https://github.com/namecoin/namecoin-core/blob/09bdf373fb3cefa9faf868f1c415e0498e45d2a7/src/chainparams.cpp#L149
+https://github.com/namecoin/namecoin-core/blob/09bdf373fb3cefa9faf868f1c415e0498e45d2a7/src/chainparams.cpp#L290
+*/
+	{
+		.name                    = "namecoin",
+		.public_key_prefix       = 52,
+		.script_prefix           = 13,
+		.private_key_prefix      = 52+128
+	},
+	{
+		.name                    = "namecoin-testnet",
+		.public_key_prefix       = 111,
+		.script_prefix           = 196,
+		.private_key_prefix      = 111+128
 	}
 };
 
