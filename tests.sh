@@ -205,6 +205,19 @@ OUTPUT=$($BITCOIN_TOOL \
 	--input "${INPUT}")
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
 # -----------------------------------------------------------------------------
+TEST="prefix7 - WIF compressed private key to address (namecoin)"
+EXPECTED="MyMfA2KMf1ppNGhvYKEqfSohKwGFyK1P5e"
+INPUT="5KhxuVoUB2AUpyqKb9bgpp1468vpTaKc1Pcd48qNzgtdpWwknBE"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key-wif \
+	--input-format base58check \
+	--output-type address \
+	--output-format base58check \
+	--network namecoin \
+	--input "${INPUT}")
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+# -----------------------------------------------------------------------------
+
 
 
 
