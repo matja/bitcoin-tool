@@ -135,6 +135,18 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-format base58check \
 	--input "${INPUT}")
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+# -----------------------------------------------------------------------------
+TEST="12 - convert 'SHA256' to address"
+EXPECTED="1JNC98D5LZbrGHFR8shDwiqLPGfpg15BUM"
+INPUT="904b8a01c68095a9e825d28082c04b75b1f56277648256985717620e8913b79b"
+OUTPUT=$($BITCOIN_TOOL \
+        --input-type public-key-sha \
+        --output-type address \
+        --input-format hex \
+        --network bitcoin \
+        --output-format base58check \
+        --input "${INPUT}")
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
 
 # -----------------------------------------------------------------------------
 # Test various different network prefixes

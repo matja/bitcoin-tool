@@ -1135,6 +1135,9 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 				);
 				return BITCOIN_ERROR_INVALID_FORMAT;
 			}
+                        assert(sizeof(self->public_key_sha256.data) >= BITCOIN_SHA256_SIZE);
+                        assert(input_raw_size >= BITCOIN_SHA256_SIZE);
+                        memcpy(self->public_key_sha256.data, input_raw, BITCOIN_SHA256_SIZE);
 			self->public_key_sha256_set = 1;
 			break;
 		}
