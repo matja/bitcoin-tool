@@ -44,3 +44,4 @@ clean :
 
 bitcoin-tool : $(OBJECTS)
 	$(CC) -o $@ $^ -L /usr/lib $(LIBS)
+

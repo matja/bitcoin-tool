@@ -1375,7 +1375,7 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 		return result;
 	}
 
-	if (self->output_text == 0) {
+	if (strlen(self->output_text) == 0) {
 		applog(APPLOG_BUG, __func__,
 			"No text to output - something went wrong"
 		);
