@@ -53,6 +53,7 @@ struct BitcoinToolOptions {
 		OUTPUT_TYPE_NONE,
 		OUTPUT_TYPE_ALL,
 		OUTPUT_TYPE_ADDRESS,
+		OUTPUT_TYPE_SCRIPT_ADDRESS,
 		OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160,
 		OUTPUT_TYPE_PUBLIC_KEY_SHA256,
 		OUTPUT_TYPE_PUBLIC_KEY,
@@ -146,6 +147,7 @@ static void BitcoinTool_ListInputTypes(FILE *output)
 	fprintf(output, "%spublic-key-sha   : 32 byte SHA256(public key) hash\n", indent);
 	fprintf(output, "%spublic-key-rmd   : 20 byte RIPEMD160(SHA256(public key)) hash\n", indent);
 	fprintf(output, "%saddress          : 21 byte Bitcoin address (prefix + hash)\n", indent);
+	fprintf(output, "%sscript-address   : 21 byte Bitcoin script address (prefix + hash)\n", indent);
 }
 
 static void BitcoinTool_ListOutputTypes(FILE *output)
@@ -237,6 +239,7 @@ static void BitcoinTool_help(BitcoinTool *self)
 		"    --input-format base58check \\\n"
 		"    --input 5J2YUwNA5hmZFW33nbUCp5TmvszYXxVYthqDv7axSisBjFJMqaT \\\n"
 		"    --output-type address \\\n"
+		"    --output-type script-address \\\n"
 		"    --output-format base58check \n"
 		"\n"
 	);
@@ -311,6 +314,8 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			v = argv[i];
 			if (!strcmp(v, "address")) {
 				o->output_type = OUTPUT_TYPE_ADDRESS;
+			} else if (!strcmp(v, "script-address")) {
+				o->output_type = OUTPUT_TYPE_SCRIPT_ADDRESS;
 			} else if (!strcmp(v, "public-key-rmd")) {
 				o->output_type = OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160;
 			} else if (!strcmp(v, "public-key-sha")) {
@@ -541,6 +546,16 @@ void Bitcoin_MakeAddressFromRIPEMD160(
 	address->data[0] = BitcoinNetworkType_GetPublicKeyPrefix(network_type);;
 }
 
+void Bitcoin_MakeScriptAddressFromRIPEMD160(
+	struct BitcoinAddress *address,
+	const struct BitcoinRIPEMD160 *hash,
+	const struct BitcoinNetworkType *network_type
+)
+{
+	memcpy(address->data+1, hash->data, BITCOIN_RIPEMD160_SIZE);
+	address->data[0] = BitcoinNetworkType_GetScriptPrefix(network_type);;
+}
+
 void Bitcoin_MakeRIPEMD160FromAddress(
 	struct BitcoinRIPEMD160 *hash,
 	const struct BitcoinAddress *address
@@ -597,6 +612,7 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 			switch (self->options.output_type) {
 				case OUTPUT_TYPE_ALL :
 				case OUTPUT_TYPE_ADDRESS :
+				case OUTPUT_TYPE_SCRIPT_ADDRESS :
 				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
 				case OUTPUT_TYPE_PUBLIC_KEY :
@@ -613,6 +629,7 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 			switch (self->options.output_type) {
 				case OUTPUT_TYPE_ALL :
 				case OUTPUT_TYPE_ADDRESS :
+				case OUTPUT_TYPE_SCRIPT_ADDRESS :
 				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
 				case OUTPUT_TYPE_PUBLIC_KEY :
@@ -628,6 +645,7 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 			switch (self->options.output_type) {
 				case OUTPUT_TYPE_ALL :
 				case OUTPUT_TYPE_ADDRESS :
+				case OUTPUT_TYPE_SCRIPT_ADDRESS :
 				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
 				case OUTPUT_TYPE_PUBLIC_KEY : {
@@ -659,6 +677,7 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 			switch (self->options.output_type) {
 				case OUTPUT_TYPE_ALL :
 				case OUTPUT_TYPE_ADDRESS :
+				case OUTPUT_TYPE_SCRIPT_ADDRESS :
 				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 				case OUTPUT_TYPE_PUBLIC_KEY_SHA256 :
 					Bitcoin_MakeSHA256FromPublicKey(&self->public_key_sha256, &self->public_key);
@@ -679,6 +698,7 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 			switch (self->options.output_type) {
 				case OUTPUT_TYPE_ALL :
 				case OUTPUT_TYPE_ADDRESS :
+				case OUTPUT_TYPE_SCRIPT_ADDRESS :
 				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 					Bitcoin_MakeRIPEMD160FromSHA256(&self->public_key_ripemd160, &self->public_key_sha256);
 					self->public_key_ripemd160_set = 1;
@@ -722,6 +742,31 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 					self->address_set = 1;
 					break;
 				}
+				case OUTPUT_TYPE_SCRIPT_ADDRESS : {
+					/* check if user has asked to override public key prefix */
+					if (self->options.network_type) {
+						self->public_key.network_type = self->options.network_type;
+					}
+
+					/* refuse to generate an address with no prefix set */
+					if (!self->public_key.network_type) {
+						applog(APPLOG_ERROR, __func__,
+							"Raw script key has no network prefix and it is unsafe"
+							" to assume one.  Please explicitally specify prefix using"
+							" --network option."
+						);
+						return BITCOIN_ERROR_IMPOSSIBLE_CONVERSION;
+					}
+
+					Bitcoin_MakeScriptAddressFromRIPEMD160(&self->address,
+						&self->public_key_ripemd160,
+						self->public_key.network_type
+					);
+
+					self->address_set = 1;
+					break;
+				}
+
 				case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 					return BITCOIN_SUCCESS;
 					break;
@@ -738,6 +783,7 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 		case INPUT_TYPE_ADDRESS :
 			switch (self->options.output_type) {
 				case OUTPUT_TYPE_ALL :
+				case OUTPUT_TYPE_SCRIPT_ADDRESS :
 				case OUTPUT_TYPE_ADDRESS :
 					return BITCOIN_SUCCESS;
 					break;
@@ -1203,6 +1249,7 @@ BitcoinResult Bitcoin_WriteAllOutput(struct BitcoinTool *self)
 		int is_set;
 	} output_types[] = {
 		{ OUTPUT_TYPE_ADDRESS,              "address" },
+		{ OUTPUT_TYPE_SCRIPT_ADDRESS,       "script-address" },
 		{ OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160, "public-key-ripemd160" },
 		{ OUTPUT_TYPE_PUBLIC_KEY_SHA256,    "public-key-sha256" },
 		{ OUTPUT_TYPE_PUBLIC_KEY,           "public-key" },
@@ -1222,6 +1269,7 @@ BitcoinResult Bitcoin_WriteAllOutput(struct BitcoinTool *self)
 		) {
 			if (
 				(output_type->output_type == OUTPUT_TYPE_ADDRESS && self->address_set) ||
+				(output_type->output_type == OUTPUT_TYPE_SCRIPT_ADDRESS && self->address_set) ||
 				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 && self->public_key_ripemd160_set) ||
 				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY_SHA256 && self->public_key_sha256_set) ||
 				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY && self->public_key_set) ||
@@ -1253,6 +1301,11 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 
 	switch (self->options.output_type) {
 		case OUTPUT_TYPE_ADDRESS :
+			output_raw_size = BITCOIN_ADDRESS_SIZE;
+			assert(sizeof(self->output_raw) >= output_raw_size);
+			memcpy(self->output_raw, self->address.data, output_raw_size);
+			break;
+		case OUTPUT_TYPE_SCRIPT_ADDRESS :
 			output_raw_size = BITCOIN_ADDRESS_SIZE;
 			assert(sizeof(self->output_raw) >= output_raw_size);
 			memcpy(self->output_raw, self->address.data, output_raw_size);

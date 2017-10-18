@@ -19,6 +19,7 @@ const struct BitcoinNetworkType *Bitcoin_GetNetworkTypeByPrivateKeyPrefix(const 
 
 BitcoinKeyPrefix BitcoinNetworkType_GetPublicKeyPrefix(const struct BitcoinNetworkType *n);
 BitcoinKeyPrefix BitcoinNetworkType_GetPrivateKeyPrefix(const struct BitcoinNetworkType *n);
+BitcoinKeyPrefix BitcoinNetworkType_GetScriptPrefix(const struct BitcoinNetworkType *n);
 
 void Bitcoin_ListNetworks(FILE *output);
 
