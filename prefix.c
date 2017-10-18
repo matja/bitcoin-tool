@@ -184,6 +184,11 @@ BitcoinKeyPrefix BitcoinNetworkType_GetPrivateKeyPrefix(const struct BitcoinNetw
 	return n->private_key_prefix;
 }
 
+BitcoinKeyPrefix BitcoinNetworkType_GetScriptPrefix(const struct BitcoinNetworkType *n)
+{
+	return n->script_prefix;
+}
+
 const struct BitcoinNetworkType *Bitcoin_GetNetworkTypeByName(const char *name)
 {
 	const struct BitcoinNetworkType *pn = network_types;
