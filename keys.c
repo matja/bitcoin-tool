@@ -230,7 +230,7 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 	EC_KEY *key = NULL;
 	EC_POINT *ec_public = NULL;
 	unsigned char *public_key_ptr = public_key->data;
-	BIGNUM private_key_bn;
+	BIGNUM *private_key_bn;
 	const EC_GROUP *group = NULL;
 	int size, size2;
 	unsigned compression = private_key->public_key_compression;
@@ -270,8 +270,8 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 		return BITCOIN_ERROR_LIBRARY_FAILURE;
 	}
 
-	BN_init(&private_key_bn);
-	BN_bin2bn(private_key->data, BITCOIN_PRIVATE_KEY_SIZE, &private_key_bn);
+	private_key_bn = BN_new();
+	BN_bin2bn(private_key->data, BITCOIN_PRIVATE_KEY_SIZE, private_key_bn);
 	ec_public = EC_POINT_new(group);
 
 	ctx = BN_CTX_new();
@@ -284,7 +284,7 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 		return BITCOIN_ERROR_LIBRARY_FAILURE;
 	}
 
-	if (!EC_POINT_mul(group, ec_public, &private_key_bn, NULL, NULL, ctx)) {
+	if (!EC_POINT_mul(group, ec_public, private_key_bn, NULL, NULL, ctx)) {
 		applog(APPLOG_ERROR, __func__,
 			"EC_POINT_mul failed: %s",
 			ERR_error_string(ERR_get_error(), NULL)
@@ -293,7 +293,7 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 		return BITCOIN_ERROR_LIBRARY_FAILURE;
 	}
 
-	EC_KEY_set_private_key(key, &private_key_bn);
+	EC_KEY_set_private_key(key, private_key_bn);
 	EC_KEY_set_public_key(key, ec_public);
 
 	if (compression == BITCOIN_PUBLIC_KEY_COMPRESSED) {
@@ -314,7 +314,7 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 			(unsigned)size,
 			(unsigned)expected_public_key_size
 		);
-		BN_free(&private_key_bn);
+		BN_free(private_key_bn);
 		EC_KEY_free(key);
 		return BITCOIN_ERROR_PUBLIC_KEY_INVALID_FORMAT;
 	}
@@ -326,7 +326,7 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 			(unsigned)size,
 			(unsigned)expected_public_key_size
 		);
-		BN_free(&private_key_bn);
+		BN_free(private_key_bn);
 		EC_KEY_free(key);
 		return BITCOIN_ERROR_PUBLIC_KEY_INVALID_FORMAT;
 	}
@@ -337,7 +337,7 @@ BitcoinResult Bitcoin_MakePublicKeyFromPrivateKey(
 
 	/* free resources */
 	EC_POINT_clear_free(ec_public);
-	BN_free(&private_key_bn);
+	BN_free(private_key_bn);
 	BN_CTX_free(ctx);
 	EC_KEY_free(key);
 
