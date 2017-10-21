@@ -32,28 +32,28 @@ BitcoinResult Bitcoin_EncodeBase58(
 {
 	static const unsigned base = 58;
 	const unsigned char *source_bytes = (const unsigned char *)source;
-	BIGNUM x, base_bn, div_bn, rem_bn;
+	BIGNUM *x, *base_bn, *div_bn, *rem_bn;
 	BN_CTX *bn_ctx = BN_CTX_new();
 	char *d = output;
 	size_t output_count = 0;
 	int output_overflow = 0;
 
 	/* initialise bignums */
-	BN_init(&x);
-	BN_init(&base_bn);
-	BN_init(&div_bn);
-	BN_init(&rem_bn);
-	BN_bin2bn(source, source_size, &x);
-	BN_set_word(&base_bn, base);
+	x = BN_new();
+	base_bn = BN_new();
+	div_bn = BN_new();
+	rem_bn = BN_new();
+	BN_bin2bn(source, source_size, x);
+	BN_set_word(base_bn, base);
 
 	/* while source is not zero, keep dividing source by base, using the
 		remainder to map to a digit. (standard base conversion)
 	*/
-	while (!BN_is_zero(&x) && !output_overflow) {
-		BN_div(&div_bn, &rem_bn, &x, &base_bn, bn_ctx);
-		BN_copy(&x, &div_bn);
+	while (!BN_is_zero(x) && !output_overflow) {
+		BN_div(div_bn, rem_bn, x, base_bn, bn_ctx);
+		BN_copy(x, div_bn);
 		if (output_count < output_buffer_size) {
-			*d++ = base58_digits[BN_get_word(&rem_bn)];
+			*d++ = base58_digits[BN_get_word(rem_bn)];
 			output_count++;
 		} else {
 			output_overflow = 1;
@@ -76,10 +76,10 @@ BitcoinResult Bitcoin_EncodeBase58(
 	*encoded_output_size = d - output;
 
 	BN_CTX_free(bn_ctx);
-	BN_free(&x);
-	BN_free(&base_bn);
-	BN_free(&div_bn);
-	BN_free(&rem_bn);
+	BN_free(x);
+	BN_free(base_bn);
+	BN_free(div_bn);
+	BN_free(rem_bn);
 
 	return output_overflow ? BITCOIN_ERROR_OUTPUT_BUFFER_TOO_SMALL : BITCOIN_SUCCESS;
 }
@@ -134,19 +134,19 @@ BitcoinResult Bitcoin_DecodeBase58(
 	unsigned bn_bytes_wrote = 0;
 	int retval = 0;
 
-	BIGNUM base, m1, m2, result, sub;
+	BIGNUM *base, *m1, *m2, *result, *sub;
 	BN_CTX *bn_ctx;
 
 	bn_ctx = BN_CTX_new();
-	BN_init(&base);
-	BN_init(&m1);
-	BN_init(&m2);
-	BN_init(&result);
-	BN_init(&sub);
+	base = BN_new();
+	m1 = BN_new();
+	m2 = BN_new();
+	result = BN_new();
+	sub = BN_new();
 
-	BN_zero(&result);
-	BN_one(&m2);
-	BN_set_word(&base, 58);
+	BN_zero(result);
+	BN_one(m2);
+	BN_set_word(base, 58);
 
 	/* count leading zero bytes (encoded as '1') */
 	while (pzc != input_bytes_end && *pzc == '1') {
@@ -170,14 +170,14 @@ BitcoinResult Bitcoin_DecodeBase58(
 			retval = BITCOIN_ERROR_INVALID_FORMAT;
 			goto done;
 		}
-		BN_set_word(&m1, v);
-		BN_mul(&sub, &m1, &m2, bn_ctx);
-		BN_add(&result, &result, &sub);
+		BN_set_word(m1, v);
+		BN_mul(sub, m1, m2, bn_ctx);
+		BN_add(result, result, sub);
 		pc--;
-		BN_mul(&m2, &m2, &base, bn_ctx);
+		BN_mul(m2, m2, base, bn_ctx);
 	}
 
-	bn_bytes_req = BN_num_bytes(&result);
+	bn_bytes_req = BN_num_bytes(result);
 
 	if (bn_bytes_req > output_buffer_size) {
 		applog(APPLOG_ERROR, __func__,
@@ -187,17 +187,17 @@ BitcoinResult Bitcoin_DecodeBase58(
 		goto done;
 	}
 
-	bn_bytes_wrote = BN_bn2bin(&result, output+leading_zeros);
+	bn_bytes_wrote = BN_bn2bin(result, output+leading_zeros);
 	retval = BITCOIN_SUCCESS;
 
 	/* clean up resources */
 done:
 	BN_CTX_free(bn_ctx);
-	BN_free(&base);
-	BN_free(&m1);
-	BN_free(&m2);
-	BN_free(&result);
-	BN_free(&sub);
+	BN_free(base);
+	BN_free(m1);
+	BN_free(m2);
+	BN_free(result);
+	BN_free(sub);
 
 	if (retval == BITCOIN_SUCCESS) {
 		*decoded_output_size = bn_bytes_wrote + leading_zeros;
