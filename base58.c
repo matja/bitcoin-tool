@@ -10,9 +10,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if OS_FAMILY == Windows
+#if defined(OS_WINDOWS)
 #include <malloc.h>
-#else
+#endif
+
+#if defined(OS_LINUX)
 #include <alloca.h>
 #endif
 

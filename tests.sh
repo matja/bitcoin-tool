@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 BITCOIN_TOOL="./bitcoin-tool"
 
@@ -23,7 +23,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--input "${INPUT}" \
 	--output-type address \
 	--output-format base58check )
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="2 - hex private key to compressed address"
 EXPECTED="1BgGZ9tcN4rm9KBzDn7KprQz87SZ26SAMH"
@@ -35,7 +35,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--public-key-compression compressed \
 	--network bitcoin \
 	--input 0000000000000000000000000000000000000000000000000000000000000001 )
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="3 - hex private key to uncompressed address"
 EXPECTED="1EHNa6Q4Jz2uvNExL497mE43ikXhwF6kZm"
@@ -47,7 +47,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--public-key-compression uncompressed \
 	--network bitcoin \
 	--input 0000000000000000000000000000000000000000000000000000000000000001 )
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="4 - WIF uncompressed private key to address"
 EXPECTED="16SK7HnxBMRxSpLhhdf8RYcqv8MPJiSF6Q"
@@ -57,7 +57,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-type address \
 	--output-format base58check \
 	--input 5J1LYLWqNxJBTwdGAmzYnpkqqSuFu48fsHv8jgojFMV2Z8exk9L )
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 
 TEST="6 - raw private key file, to uncompressed base58check WIF private key"
@@ -72,7 +72,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--public-key-compression uncompressed \
 	--network bitcoin \
 )
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="7 - raw private key file, to compressed base58check WIF private key"
 EXPECTED="KzXVLY4ni4yznz8LJwdUmNoGpUfebSxiakXRqcGAeuhihzaVe3Rz"
@@ -86,7 +86,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--public-key-compression compressed \
 	--network bitcoin \
 )
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="8 - hex ripemd160 hash of public key, to base58check address"
 EXPECTED="1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
@@ -99,7 +99,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-format base58check \
 	--network bitcoin \
 )
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="9 - base58check address, to hex ripemd160 hash of public key"
 EXPECTED="62e907b15cbf27d5425399ebf6f0fb50ebb88f18"
@@ -110,7 +110,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--input "${INPUT}" \
 	--output-type public-key-rmd \
 	--output-format hex )
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="10 - fix base58check address, by changing 1 character"
 EXPECTED="1NaqSiNC4tfbyX42NGca24pBWvJ5L4Bd5J"
@@ -122,7 +122,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-format base58check \
 	--input 5J5sKGFLpZ4bQXEHiEmDp9Fuf7k36FqF3WoaNKHKDHnLfJYnkUR \
 	--fix-base58check )
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="11 - convert 'Hash 160' to address"
 EXPECTED="12c6DSiU4Rq3P4ZxziKxzrL5LmMBrzjrJX"
@@ -134,7 +134,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--network bitcoin \
 	--output-format base58check \
 	--input "${INPUT}")
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="12 - convert 'SHA256' to address"
 EXPECTED="1JNC98D5LZbrGHFR8shDwiqLPGfpg15BUM"
@@ -146,7 +146,7 @@ OUTPUT=$($BITCOIN_TOOL \
         --network bitcoin \
         --output-format base58check \
         --input "${INPUT}")
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 
 # -----------------------------------------------------------------------------
 # Test various different network prefixes
@@ -160,7 +160,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-type address \
 	--output-format base58check \
 	--input "${INPUT}")
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="prefix2 - WIF compressed private key to address (bitcoin-testnet)"
 EXPECTED="mxToLbBqPcSNnqPCSnrYjFv172TFPLjVNf"
@@ -171,7 +171,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-type address \
 	--output-format base58check \
 	--input "${INPUT}")
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="prefix3 - WIF compressed private key to address (litecoin)"
 EXPECTED="LMzBLYQG2opHvMBihMQgJBboxunoj5pssC"
@@ -182,7 +182,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-type address \
 	--output-format base58check \
 	--input "${INPUT}")
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="prefix4 - WIF compressed private key to address (dogecoin)"
 EXPECTED="DHEPGdnS46dHT79tkfm5DyhGAbQj4Xi8Ni"
@@ -193,7 +193,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-type address \
 	--output-format base58check \
 	--input "${INPUT}")
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="prefix5 - WIF compressed private key to address (feathercoin)"
 EXPECTED="6ggpjHf7iq2vdvq8HNfZo9XQSLeVfxezzX"
@@ -204,7 +204,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-type address \
 	--output-format base58check \
 	--input "${INPUT}")
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="prefix6 - WIF compressed private key to address (quarkcoin)"
 EXPECTED="QUARKbonge6S9FyPKSa5HgxAsUercoU8CL"
@@ -215,7 +215,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-type address \
 	--output-format base58check \
 	--input "${INPUT}")
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 TEST="prefix7 - WIF compressed private key to address (namecoin)"
 EXPECTED="MyMfA2KMf1ppNGhvYKEqfSohKwGFyK1P5e"
@@ -227,7 +227,7 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-format base58check \
 	--network namecoin \
 	--input "${INPUT}")
-check "${TEST}" "${OUTPUT}" "${EXPECTED}" || return 1
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
 
 

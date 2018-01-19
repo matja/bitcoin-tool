@@ -12,6 +12,9 @@ Run `make test` to compile and run all tests.
 ### Requirements
 * A C compiler
 * OpenSSL headers and libraries (with elliptic curve support)
+* GNU make : Packages: FreeBSD `gmake`
+* GNU bash (for running tests)
+* xxd (for running tests) : Packages: Linux `vim`, FreeBSD `vim` or `vim-lite`
 
 ## Platform-specific Instructions
 ### Gentoo Linux
@@ -20,13 +23,28 @@ elliptic curve support, presumably because of software patent concerns.  Since
 the `openssh` package also has `bindist` USE-flag set, the USE-flag must be disabled
 in both, then re-emerged to get an OpenSSL library with elliptic curve support.
 
+### FreeBSD
+Use `gmake` to process the Makefile.
+
+Tested on:
+* FreeBSD 10.4 amd64, clang 3.4.1
+* FreeBSD 11.1 amd64, clang 4.0.0
+
+### Windows
+Tested on Windows 10 64-bit edition using Cygwin (64-bit) with
+`x86_64_w64_mingw32-gcc` compiler.
+
+Requires Cygwin packages: `bash`, `make`, `mingw64-x86_64-gcc-core`, `openssl-devel`
+
+Use `make CC=other_cc` to specify a different compiler if needed.
+
 ## Description
 I created this because I couldn't find an offline tool or library able
 to create addresses from Bitcoin private keys, and as a learning exercise in
 Bitcoin address formats and ECDSA.
 
 Some day I'd like to replace the dependancy on OpenSSL with my own
-implementation of ECDSA.
+implementation of ECDSA (for portability).
 
 The option names are a little verbose but I wanted to make it clear exactly what
 each one is referring to, especially when it is possible to make a costly
