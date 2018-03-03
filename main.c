@@ -53,6 +53,7 @@ struct BitcoinToolOptions {
 		OUTPUT_TYPE_NONE,
 		OUTPUT_TYPE_ALL,
 		OUTPUT_TYPE_ADDRESS,
+		OUTPUT_TYPE_ADDRESS_CHECKSUM,
 		OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160,
 		OUTPUT_TYPE_PUBLIC_KEY_SHA256,
 		OUTPUT_TYPE_PUBLIC_KEY,
@@ -153,6 +154,7 @@ static void BitcoinTool_ListOutputTypes(FILE *output)
 	static const char indent[] = "      ";
 	fprintf(output, "%sall              : All output types, as type:value pairs, most of which\n", indent);
 	fprintf(output, "%s                   are never commonly used, probably for good reason.\n", indent);
+	fprintf(output, "%saddress-checksum : 25 byte Bitcoin address (prefix + hash + checksum)\n", indent);
 	BitcoinTool_ListInputTypes(output);
 }
 
@@ -311,6 +313,8 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			v = argv[i];
 			if (!strcmp(v, "address")) {
 				o->output_type = OUTPUT_TYPE_ADDRESS;
+			} else if (!strcmp(v, "address-checksum")) {
+				o->output_type = OUTPUT_TYPE_ADDRESS_CHECKSUM;
 			} else if (!strcmp(v, "public-key-rmd")) {
 				o->output_type = OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160;
 			} else if (!strcmp(v, "public-key-sha")) {
@@ -1203,6 +1207,7 @@ BitcoinResult Bitcoin_WriteAllOutput(struct BitcoinTool *self)
 		int is_set;
 	} output_types[] = {
 		{ OUTPUT_TYPE_ADDRESS,              "address" },
+		{ OUTPUT_TYPE_ADDRESS_CHECKSUM,     "address-checksum" },
 		{ OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160, "public-key-ripemd160" },
 		{ OUTPUT_TYPE_PUBLIC_KEY_SHA256,    "public-key-sha256" },
 		{ OUTPUT_TYPE_PUBLIC_KEY,           "public-key" },
@@ -1221,7 +1226,19 @@ BitcoinResult Bitcoin_WriteAllOutput(struct BitcoinTool *self)
 			output_format++
 		) {
 			if (
+				output_type->output_type == OUTPUT_TYPE_ADDRESS_CHECKSUM
+				&& output_format->output_format == OUTPUT_FORMAT_BASE58CHECK
+			) {
+				/* This combination shouldn't be output, as I believe there
+				   is no valid use for it and there is potential for confusion
+				   for it to represent a usable address.
+				*/
+				continue;
+			}
+
+			if (
 				(output_type->output_type == OUTPUT_TYPE_ADDRESS && self->address_set) ||
+				(output_type->output_type == OUTPUT_TYPE_ADDRESS_CHECKSUM && self->address_set) ||
 				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 && self->public_key_ripemd160_set) ||
 				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY_SHA256 && self->public_key_sha256_set) ||
 				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY && self->public_key_set) ||
@@ -1243,9 +1260,12 @@ BitcoinResult Bitcoin_WriteAllOutput(struct BitcoinTool *self)
 
 BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 {
+	struct BitcoinSHA256 checksum;
 	BitcoinResult result = BITCOIN_SUCCESS;
 	size_t output_raw_size = 0;
 	int bytes_wrote = 0;
+
+	memset(&checksum, 0, sizeof(checksum));
 
 	if (self->options.output_type == OUTPUT_TYPE_ALL) {
 		return Bitcoin_WriteAllOutput(self);
@@ -1256,6 +1276,14 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 			output_raw_size = BITCOIN_ADDRESS_SIZE;
 			assert(sizeof(self->output_raw) >= output_raw_size);
 			memcpy(self->output_raw, self->address.data, output_raw_size);
+			break;
+		case OUTPUT_TYPE_ADDRESS_CHECKSUM :
+			output_raw_size = BITCOIN_ADDRESS_SIZE + BITCOIN_BASE58CHECK_CHECKSUM_SIZE;
+			assert(sizeof(self->output_raw) >= output_raw_size);
+			Bitcoin_DoubleSHA256(&checksum, self->address.data, BITCOIN_ADDRESS_SIZE);
+			memcpy(self->output_raw, self->address.data, BITCOIN_ADDRESS_SIZE);
+			memcpy(self->output_raw + BITCOIN_ADDRESS_SIZE, &checksum.data,
+				BITCOIN_BASE58CHECK_CHECKSUM_SIZE);
 			break;
 		case OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 :
 			output_raw_size = BITCOIN_RIPEMD160_SIZE;
