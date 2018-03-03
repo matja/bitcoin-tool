@@ -171,7 +171,18 @@ https://github.com/namecoin/namecoin-core/blob/09bdf373fb3cefa9faf868f1c415e0498
 		.public_key_prefix       = 111,
 		.script_prefix           = 196,
 		.private_key_prefix      = 111+128
-	}
+	},
+/*
+Komodo:
+public keys / script / private keys:
+https://github.com/jl777/komodo/blob/a86845f3dc5444d24f4420908125f4c4cb58b4ff/src/chainparams.cpp#L104
+*/
+	{
+		.name                    = "komodo",
+		.public_key_prefix       = 60,
+		.script_prefix           = 85,
+		.private_key_prefix      = 60+128
+	},
 };
 
 BitcoinKeyPrefix BitcoinNetworkType_GetPublicKeyPrefix(const struct BitcoinNetworkType *n)
