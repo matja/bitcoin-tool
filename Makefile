@@ -39,7 +39,7 @@ endif
 CFLAGS += -ansi -Wall $(CFLAGS_DEBUG) $(CFLAGS_OPTIMISE) \
 	$(CFLAGS_DISABLE_WARNINGS) $(INCLUDE)
 
-OBJECTS = main.o keys.o hash.o base58.o result.o combination.o applog.o \
+OBJECTS = main.o keys.o hash.o base58.o segwit_addr.o result.o combination.o applog.o \
 	utility.o prefix.o
 
 .PHONY : all clean test

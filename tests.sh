@@ -147,6 +147,41 @@ OUTPUT=$($BITCOIN_TOOL \
         --output-format base58check \
         --input "${INPUT}")
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="13 - convert WIF private key to address bech32"
+EXPECTED="bc1qhmc0vk4xzr37ayv7tlyhns7x4dk04tyvflk8ey"
+INPUT="L3GzRAGwCqfSNFr6g1NQm7edn29DgAKZJ6owUBqYELpP6Kbim5kM"
+OUTPUT=$($BITCOIN_TOOL \
+        --input-type private-key-wif \
+        --output-type address \
+        --input-format base58check \
+        --network bitcoin \
+        --output-format bech32 \
+        --input "${INPUT}")
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="14 - bech32 address, to hex ripemd160 hash of public key"
+EXPECTED="bef0f65aa610e3ee919e5fc979c3c6ab6cfaac8c"
+INPUT="bc1qhmc0vk4xzr37ayv7tlyhns7x4dk04tyvflk8ey"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type address \
+	--input-format bech32 \
+	--input "${INPUT}" \
+	--output-type public-key-rmd \
+	--output-format hex )
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="15 - convert WIF private key to ripemd160 hash of public key"
+EXPECTED="bef0f65aa610e3ee919e5fc979c3c6ab6cfaac8c"
+INPUT="L3GzRAGwCqfSNFr6g1NQm7edn29DgAKZJ6owUBqYELpP6Kbim5kM"
+OUTPUT=$($BITCOIN_TOOL \
+        --input-type private-key-wif \
+        --output-type public-key-rmd \
+        --input-format base58check \
+        --network bitcoin \
+        --output-format hex \
+        --input "${INPUT}")
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 
 # -----------------------------------------------------------------------------
 # Test various different network prefixes

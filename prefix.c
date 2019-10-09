@@ -11,12 +11,14 @@ Peercoin, Primecoin and Zetacoin use the same constants.
 */
 	{
 		.name                    = "bitcoin",
+		.hrp                     = "bc",
 		.public_key_prefix       = 0,
 		.script_prefix           = 5,
 		.private_key_prefix      = 128
 	},
 	{
 		.name                    = "bitcoin-testnet",
+		.hrp                     = "tb",
 		.public_key_prefix       = 111,
 		.script_prefix           = 196,
 		.private_key_prefix      = 239
@@ -30,12 +32,14 @@ https://github.com/litecoin-project/litecoin/blob/88e2a2e8988b89f905145bdc9af8c3
 */
 	{
 		.name                    = "litecoin",
+		.hrp                     = "ltc",
 		.public_key_prefix       = 48,
 		.script_prefix           = 5,
 		.private_key_prefix      = 48+128
 	},
 	{
 		.name                    = "litecoin-testnet",
+		.hrp                     = "tltc",
 		.public_key_prefix       = 111,
 		.script_prefix           = 196,
 		.private_key_prefix      = 111+128
@@ -49,12 +53,14 @@ https://github.com/FeatherCoin/Feathercoin-0.8.5/blob/master-0.8/src/base58.h#L4
 */
 	{
 		.name                    = "feathercoin",
+		.hrp                     = "fc",
 		.public_key_prefix       = 14,
 		.script_prefix           = 5,
 		.private_key_prefix      = 14+128
 	},
 	{
 		.name                    = "feathercoin-testnet",
+		.hrp                     = "tfc",
 		.public_key_prefix       = 111,
 		.script_prefix           = 196,
 		.private_key_prefix      = 111+128
@@ -68,12 +74,14 @@ https://github.com/dogecoin/dogecoin/blob/v1.5.0/src/base58.h#L404
 */
 	{
 		.name                    = "dogecoin",
+		.hrp                     = "dc",
 		.public_key_prefix       = 30,
 		.script_prefix           = 22,
 		.private_key_prefix      = 30+128
 	},
 	{
 		.name                    = "dogecoin-testnet",
+		.hrp                     = "tdc",
 		.public_key_prefix       = 113,
 		.script_prefix           = 196,
 		.private_key_prefix      = 113+128
@@ -87,12 +95,14 @@ https://github.com/MaxGuevara/quark/blob/v0.8.3.20/src/base58.h#L403
 */
 	{
 		.name                    = "quarkcoin",
+		.hrp                     = "qc",
 		.public_key_prefix       = 58,
 		.script_prefix           = 9,
 		.private_key_prefix      = 58+128
 	},
 	{
 		.name                    = "quarkcoin-testnet",
+		.hrp                     = "tqc",
 		.public_key_prefix       = 119,
 		.script_prefix           = 199,
 		.private_key_prefix      = 119+128
@@ -106,12 +116,14 @@ https://github.com/darkcoinproject/darkcoin/blob/master/src/base58.h#L403
 */
 	{
 		.name                    = "darkcoin",
+		.hrp                     = "xc",
 		.public_key_prefix       = 76,
 		.script_prefix           = 9,
 		.private_key_prefix      = 76+128
 	},
 	{
 		.name                    = "darkcoin-testnet",
+		.hrp                     = "txc",
 		.public_key_prefix       = 111,
 		.script_prefix           = 196,
 		.private_key_prefix      = 111+128
@@ -125,12 +137,14 @@ https://github.com/jyap808/coinmarketscoin/blob/master/src/base58.h#L425
 */
 	{
 		.name                    = "jumbucks",
+		.hrp                     = "jb",
 		.public_key_prefix       = 43,
 		.script_prefix           = 105,
 		.private_key_prefix      = 43+128
 	},
 	{
 		.name                    = "jumbucks-testnet",
+		.hrp                     = "tjb",
 		.public_key_prefix       = 107,
 		.script_prefix           = 176,
 		.private_key_prefix      = 107+128
@@ -144,12 +158,14 @@ https://github.com/ppcoin/ppcoin/blob/v0.5.2ppc/src/base58.h#L428
 */
 	{
 		.name                    = "peercoin",
+		.hrp                     = "pc",
 		.public_key_prefix       = 55,
 		.script_prefix           = 117,
 		.private_key_prefix      = 55+128
 	},
 	{
 		.name                    = "peercoin-testnet",
+		.hrp                     = "tpc",
 		.public_key_prefix       = 111,
 		.script_prefix           = 196,
 		.private_key_prefix      = 111+128
@@ -162,12 +178,14 @@ https://github.com/namecoin/namecoin-core/blob/09bdf373fb3cefa9faf868f1c415e0498
 */
 	{
 		.name                    = "namecoin",
+		.hrp                     = "nc",
 		.public_key_prefix       = 52,
 		.script_prefix           = 13,
 		.private_key_prefix      = 52+128
 	},
 	{
 		.name                    = "namecoin-testnet",
+		.hrp                     = "tn",
 		.public_key_prefix       = 111,
 		.script_prefix           = 196,
 		.private_key_prefix      = 111+128
@@ -179,6 +197,7 @@ https://github.com/jl777/komodo/blob/a86845f3dc5444d24f4420908125f4c4cb58b4ff/sr
 */
 	{
 		.name                    = "komodo",
+		.hrp                     = "zs",
 		.public_key_prefix       = 60,
 		.script_prefix           = 85,
 		.private_key_prefix      = 60+128
@@ -201,6 +220,20 @@ const struct BitcoinNetworkType *Bitcoin_GetNetworkTypeByName(const char *name)
 
 	while (pn != network_types + (sizeof(network_types)/sizeof(network_types[0]))) {
 		if (strcmp(name, pn->name) == 0) {
+			return pn;
+		}
+		pn++;
+	}
+
+	return NULL;
+}
+
+const struct BitcoinNetworkType *Bitcoin_GetNetworkTypeByHrp(const char *hrp)
+{
+	const struct BitcoinNetworkType *pn = network_types;
+
+	while (pn != network_types + (sizeof(network_types)/sizeof(network_types[0]))) {
+		if (strcmp(hrp, pn->hrp) == 0) {
 			return pn;
 		}
 		pn++;

@@ -15,6 +15,7 @@
 #include "keys.h"
 #include "utility.h"
 #include "base58.h"
+#include "segwit_addr.h"
 #include "applog.h"
 #include "result.h"
 #include "prefix.h"
@@ -46,7 +47,8 @@ struct BitcoinToolOptions {
 		INPUT_FORMAT_RAW,
 		INPUT_FORMAT_HEX,
 		INPUT_FORMAT_BASE58,
-		INPUT_FORMAT_BASE58CHECK
+		INPUT_FORMAT_BASE58CHECK,
+		INPUT_FORMAT_BECH32
 	} input_format;
 
 	enum OutputType {
@@ -66,7 +68,8 @@ struct BitcoinToolOptions {
 		OUTPUT_FORMAT_RAW,
 		OUTPUT_FORMAT_HEX,
 		OUTPUT_FORMAT_BASE58,
-		OUTPUT_FORMAT_BASE58CHECK
+		OUTPUT_FORMAT_BASE58CHECK,
+		OUTPUT_FORMAT_BECH32
 	} output_format;
 
 	enum PublicKeyCompression {
@@ -165,6 +168,7 @@ static void BitcoinTool_ListInputFormats(FILE *output)
 	fprintf(output, "%shex         : Hexadecimal encoded\n", indent);
 	fprintf(output, "%sbase58      : Base58 encoded\n", indent);
 	fprintf(output, "%sbase58check : Base58Check encoded (most common)\n", indent);
+	fprintf(output, "%sbech32      : bech32 encoded\n", indent);
 }
 
 static void BitcoinTool_ListOutputFormats(FILE *output)
@@ -351,6 +355,8 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 				o->input_format = INPUT_FORMAT_BASE58;
 			} else if (!strcmp(v, "base58check")) {
 				o->input_format = INPUT_FORMAT_BASE58CHECK;
+			} else if (!strcmp(v, "bech32")) {
+				o->input_format = INPUT_FORMAT_BECH32;
 			} else {
 				applog(APPLOG_ERROR, __func__,
 					"Unknown value \"%s\" for --input-format, must be one of:", v
@@ -375,6 +381,8 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 				o->output_format = OUTPUT_FORMAT_BASE58;
 			} else if (!strcmp(v, "base58check")) {
 				o->output_format = OUTPUT_FORMAT_BASE58CHECK;
+			} else if (!strcmp(v, "bech32")) {
+				o->output_format = OUTPUT_FORMAT_BECH32;
 			} else {
 				applog(APPLOG_ERROR, __func__,
 					"Unknown value \"%s\" for --output-format, must be one of:", v
@@ -948,6 +956,43 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 			}
 			break;
 		}
+		case INPUT_FORMAT_BECH32 : {
+			char hrp[32] = {0};
+			if (!bech32_decode(
+				&hrp[0], self->input_raw+1, &self->input_raw_size,
+				self->input))
+			{
+				applog(APPLOG_ERROR, __func__,
+					"Failed to decode bech32 input (%s).",
+					Bitcoin_ResultString(BITCOIN_ERROR)
+				);
+				return BITCOIN_ERROR_INVALID_FORMAT;
+			}
+			/* obtain network type from the HRP part of the address */
+			if (!self->options.network_type)
+				self->options.network_type = Bitcoin_GetNetworkTypeByHrp(hrp);
+			if (!self->options.network_type) {
+				applog(APPLOG_ERROR, __func__,
+					"Failed to decode bech32 HRP input (%s).",
+					Bitcoin_ResultString(BITCOIN_ERROR)
+				);
+				return BITCOIN_ERROR_INVALID_FORMAT;
+			}
+			int witver = 0;
+			if (!segwit_addr_decode(
+				&witver, self->input_raw+1, &self->input_raw_size, hrp,
+				self->input))
+			{
+				applog(APPLOG_ERROR, __func__,
+					"Failed to validate bech32 input (%s).",
+					Bitcoin_ResultString(BITCOIN_ERROR)
+				);
+				return BITCOIN_ERROR_INVALID_FORMAT;
+			}
+			self->input_raw[0] = self->options.network_type->public_key_prefix;
+			self->input_raw_size += 1;
+			break;
+		}
 		default :
 			applog(APPLOG_ERROR, __func__, "unspecified input type");
 			return BITCOIN_ERROR_INVALID_FORMAT;
@@ -1198,7 +1243,8 @@ BitcoinResult Bitcoin_WriteAllOutput(struct BitcoinTool *self)
 	} output_formats[] = {
 		{ OUTPUT_FORMAT_HEX,         "hex" },
 		{ OUTPUT_FORMAT_BASE58,      "base58" },
-		{ OUTPUT_FORMAT_BASE58CHECK, "base58check" }
+		{ OUTPUT_FORMAT_BASE58CHECK, "base58check" },
+		{ OUTPUT_FORMAT_BECH32,      "bech32" }
 	}, *output_format = NULL;
 
 	struct OutputTypeString {
@@ -1383,6 +1429,15 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 				&self->output_text_size,
 				self->output_raw, output_raw_size
 			);
+			break;
+		}
+		case OUTPUT_FORMAT_BECH32 : {
+			if (!segwit_addr_encode(
+				self->output_text,
+				self->options.network_type->hrp, 0,
+				self->output_raw+1, output_raw_size-1
+			))
+			{ result = BITCOIN_ERROR; }
 			break;
 		}
 		default:
