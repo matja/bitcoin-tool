@@ -1438,6 +1438,7 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 				self->output_raw+1, output_raw_size-1
 			))
 			{ result = BITCOIN_ERROR; }
+			self->output_text_size = strlen(self->output_text);
 			break;
 		}
 		default:
