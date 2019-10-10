@@ -4,204 +4,149 @@
 #include <string.h>
 
 static const struct BitcoinNetworkType network_types[] = {
-/*
-Bitcoin:
-https://en.bitcoin.it/wiki/List_of_address_prefixes
-Peercoin, Primecoin and Zetacoin use the same constants.
-*/
+	/* Bitcoin */
 	{
 		.name                    = "bitcoin",
-		.hrp                     = "bc",
-		.public_key_prefix       = 0,
-		.script_prefix           = 5,
-		.private_key_prefix      = 128
+		.hrp                     = "bc", /* https://github.com/bitcoin/bitcoin/blob/v0.18.1/src/chainparams.cpp#L138 */
+		.public_key_prefix       = 0,    /* https://github.com/bitcoin/bitcoin/blob/v0.18.1/src/chainparams.cpp#L132 */
+		.script_prefix           = 5,    /* https://github.com/bitcoin/bitcoin/blob/v0.18.1/src/chainparams.cpp#L133 */
+		.private_key_prefix      = 128   /* https://github.com/bitcoin/bitcoin/blob/v0.18.1/src/chainparams.cpp#L134 */
 	},
 	{
 		.name                    = "bitcoin-testnet",
-		.hrp                     = "tb",
-		.public_key_prefix       = 111,
-		.script_prefix           = 196,
-		.private_key_prefix      = 239
+		.hrp                     = "tb", /* https://github.com/bitcoin/bitcoin/blob/v0.18.1/src/chainparams.cpp#L244 */
+		.public_key_prefix       = 111,  /* https://github.com/bitcoin/bitcoin/blob/v0.18.1/src/chainparams.cpp#L238 */
+		.script_prefix           = 196,  /* https://github.com/bitcoin/bitcoin/blob/v0.18.1/src/chainparams.cpp#L239 */
+		.private_key_prefix      = 239   /* https://github.com/bitcoin/bitcoin/blob/v0.18.1/src/chainparams.cpp#L240 */
 	},
-/*
-Litecoin:
-public keys / script:
-https://github.com/litecoin-project/litecoin/blob/88e2a2e8988b89f905145bdc9af8c34028d0af90/src/base58.h#L275
-private keys:
-https://github.com/litecoin-project/litecoin/blob/88e2a2e8988b89f905145bdc9af8c34028d0af90/src/base58.h#L403
-*/
+	/* Litecoin */
 	{
 		.name                    = "litecoin",
-		.hrp                     = "ltc",
-		.public_key_prefix       = 48,
-		.script_prefix           = 5,
-		.private_key_prefix      = 48+128
+		.hrp                     = "ltc", /* https://github.com/litecoin-project/litecoin/blob/v0.17.1/src/chainparams.cpp#L145 */
+		.public_key_prefix       = 48,    /* https://github.com/litecoin-project/litecoin/blob/v0.17.1/src/chainparams.cpp#L138 */
+		.script_prefix           = 5,     /* https://github.com/litecoin-project/litecoin/blob/v0.17.1/src/chainparams.cpp#L139 */
+		.private_key_prefix      = 48+128 /* https://github.com/litecoin-project/litecoin/blob/v0.17.1/src/chainparams.cpp#L141 */
 	},
 	{
 		.name                    = "litecoin-testnet",
-		.hrp                     = "tltc",
-		.public_key_prefix       = 111,
-		.script_prefix           = 196,
-		.private_key_prefix      = 111+128
+		.hrp                     = "tltc", /* https://github.com/litecoin-project/litecoin/blob/v0.17.1/src/chainparams.cpp#L252 */
+		.public_key_prefix       = 111,    /* https://github.com/litecoin-project/litecoin/blob/v0.17.1/src/chainparams.cpp#L345 */
+		.script_prefix           = 196,    /* https://github.com/litecoin-project/litecoin/blob/v0.17.1/src/chainparams.cpp#L346 */
+		.private_key_prefix      = 111+128 /* https://github.com/litecoin-project/litecoin/blob/v0.17.1/src/chainparams.cpp#L348 */
 	},
-/*
-Feathercoin:
-public keys / script:
-https://github.com/FeatherCoin/Feathercoin-0.8.5/blob/master-0.8/src/base58.h#L275
-private keys:
-https://github.com/FeatherCoin/Feathercoin-0.8.5/blob/master-0.8/src/base58.h#L403
-*/
+	/* Feathercoin */
 	{
 		.name                    = "feathercoin",
-		.hrp                     = "fc",
-		.public_key_prefix       = 14,
-		.script_prefix           = 5,
-		.private_key_prefix      = 14+128
+		.hrp                     = "fc",  /* https://github.com/FeatherCoin/Feathercoin/blob/0.18/src/chainparams.cpp#L138 */
+		.public_key_prefix       = 14,    /* https://github.com/FeatherCoin/Feathercoin/blob/0.18/src/chainparams.cpp#L132 */
+		.script_prefix           = 5,     /* https://github.com/FeatherCoin/Feathercoin/blob/0.18/src/chainparams.cpp#L133 */
+		.private_key_prefix      = 14+128 /* https://github.com/FeatherCoin/Feathercoin/blob/0.18/src/chainparams.cpp#L134 */
 	},
 	{
 		.name                    = "feathercoin-testnet",
-		.hrp                     = "tfc",
-		.public_key_prefix       = 111,
-		.script_prefix           = 196,
-		.private_key_prefix      = 111+128
+		.hrp                     = "tfc",  /* TODO: Add reference. */
+		.public_key_prefix       = 111,    /* TODO: Add reference. */
+		.script_prefix           = 196,    /* TODO: Add reference. */
+		.private_key_prefix      = 111+128 /* TODO: Add reference. */
 	},
-/*
-Dogecoin:
-public keys / script:
-https://github.com/dogecoin/dogecoin/blob/v1.5.0/src/base58.h#L276
-private keys:
-https://github.com/dogecoin/dogecoin/blob/v1.5.0/src/base58.h#L404
-*/
+	/* Dogecoin */
 	{
 		.name                    = "dogecoin",
-		.hrp                     = "dc",
-		.public_key_prefix       = 30,
-		.script_prefix           = 22,
-		.private_key_prefix      = 30+128
+		.hrp                     = "dc",   /* TODO: Add reference. */
+		.public_key_prefix       = 30,     /* https://github.com/dogecoin/dogecoin/blob/v1.14.1/src/chainparams.cpp#L167 */
+		.script_prefix           = 22,     /* https://github.com/dogecoin/dogecoin/blob/v1.14.1/src/chainparams.cpp#L168 */
+		.private_key_prefix      = 30+128  /* https://github.com/dogecoin/dogecoin/blob/v1.14.1/src/chainparams.cpp#L169 */
 	},
 	{
 		.name                    = "dogecoin-testnet",
-		.hrp                     = "tdc",
-		.public_key_prefix       = 113,
-		.script_prefix           = 196,
-		.private_key_prefix      = 113+128
+		.hrp                     = "tdc",  /* TODO: Add reference. */
+		.public_key_prefix       = 113,    /* https://github.com/dogecoin/dogecoin/blob/v1.14.1/src/chainparams.cpp#L320 */
+		.script_prefix           = 196,    /* https://github.com/dogecoin/dogecoin/blob/v1.14.1/src/chainparams.cpp#L321 */
+		.private_key_prefix      = 113+128 /* https://github.com/dogecoin/dogecoin/blob/v1.14.1/src/chainparams.cpp#L322 */
 	},
-/*
-Quarkcoin:
-public keys / script:
-https://github.com/MaxGuevara/quark/blob/v0.8.3.20/src/base58.h#L275
-private keys:
-https://github.com/MaxGuevara/quark/blob/v0.8.3.20/src/base58.h#L403
-*/
+	/* Quarkcoin */
 	{
 		.name                    = "quarkcoin",
-		.hrp                     = "qc",
-		.public_key_prefix       = 58,
-		.script_prefix           = 9,
-		.private_key_prefix      = 58+128
+		.hrp                     = "qc",  /* TODO: Add reference. */
+		.public_key_prefix       = 58,    /* https://github.com/MaxGuevara/quark/blob/v0.10.7.4/src/chainparams.cpp#L202 */
+		.script_prefix           = 9,     /* https://github.com/MaxGuevara/quark/blob/v0.10.7.4/src/chainparams.cpp#L203 */
+		.private_key_prefix      = 58+128 /* https://github.com/MaxGuevara/quark/blob/v0.10.7.4/src/chainparams.cpp#L204 */
 	},
 	{
 		.name                    = "quarkcoin-testnet",
-		.hrp                     = "tqc",
-		.public_key_prefix       = 119,
-		.script_prefix           = 199,
-		.private_key_prefix      = 119+128
+		.hrp                     = "tqc",  /* TODO: Add reference. */
+		.public_key_prefix       = 119,    /* https://github.com/MaxGuevara/quark/blob/v0.10.7.4/src/chainparams.cpp#L280 */
+		.script_prefix           = 199,    /* https://github.com/MaxGuevara/quark/blob/v0.10.7.4/src/chainparams.cpp#L281 */
+		.private_key_prefix      = 119+128 /* https://github.com/MaxGuevara/quark/blob/v0.10.7.4/src/chainparams.cpp#L282 */
 	},
-/*
-Darkcoin:
-public keys / script:
-https://github.com/darkcoinproject/darkcoin/blob/master/src/base58.h#L275
-private keys:
-https://github.com/darkcoinproject/darkcoin/blob/master/src/base58.h#L403
-*/
+	/* Darkcoin */
 	{
 		.name                    = "darkcoin",
-		.hrp                     = "xc",
-		.public_key_prefix       = 76,
-		.script_prefix           = 9,
-		.private_key_prefix      = 76+128
+		.hrp                     = "xc",  /* TODO: Add reference. */
+		.public_key_prefix       = 76,    /* FIXME: (dead link, abandoned chain?) https://github.com/darkcoinproject/darkcoin/blob/master/src/base58.h#L275 */
+		.script_prefix           = 9,     /* TODO: Add reference. */
+		.private_key_prefix      = 76+128 /* FIXME: (dead link, abandoned chain?) https://github.com/darkcoinproject/darkcoin/blob/master/src/base58.h#L403 */
 	},
 	{
 		.name                    = "darkcoin-testnet",
-		.hrp                     = "txc",
-		.public_key_prefix       = 111,
-		.script_prefix           = 196,
-		.private_key_prefix      = 111+128
+		.hrp                     = "txc",  /* TODO: Add reference. */
+		.public_key_prefix       = 111,    /* TODO: Add reference. */
+		.script_prefix           = 196,    /* TODO: Add reference. */
+		.private_key_prefix      = 111+128 /* TODO: Add reference. */
 	},
-/*
-Jumbucks:
-public keys / script:
-https://github.com/jyap808/coinmarketscoin/blob/master/src/base58.h#L276
-private keys:
-https://github.com/jyap808/coinmarketscoin/blob/master/src/base58.h#L425
-*/
+	/* Jumbucks */
 	{
 		.name                    = "jumbucks",
-		.hrp                     = "jb",
-		.public_key_prefix       = 43,
-		.script_prefix           = 105,
-		.private_key_prefix      = 43+128
+		.hrp                     = "jb",  /* TODO: Add reference. */
+		.public_key_prefix       = 43,    /* https://github.com/jyap808/jumbucks/blob/v1.9/src/base58.h#L276 */
+		.script_prefix           = 105,   /* https://github.com/jyap808/jumbucks/blob/v1.9/src/base58.h#L277 */
+		.private_key_prefix      = 43+128 /* https://github.com/jyap808/jumbucks/blob/v1.9/src/base58.h#L425 */
 	},
 	{
 		.name                    = "jumbucks-testnet",
-		.hrp                     = "tjb",
-		.public_key_prefix       = 107,
-		.script_prefix           = 176,
-		.private_key_prefix      = 107+128
+		.hrp                     = "tjb",  /* TODO: Add reference. */
+		.public_key_prefix       = 107,    /* https://github.com/jyap808/jumbucks/blob/v1.9/src/base58.h#L278 */
+		.script_prefix           = 176,    /* https://github.com/jyap808/jumbucks/blob/v1.9/src/base58.h#L279 */
+		.private_key_prefix      = 107+128 /* https://github.com/jyap808/jumbucks/blob/v1.9/src/base58.h#L428 */
 	},
-/*
-Peercoin:
-public keys / script:
-https://github.com/ppcoin/ppcoin/blob/v0.5.2ppc/src/base58.h#L280
-private keys:
-https://github.com/ppcoin/ppcoin/blob/v0.5.2ppc/src/base58.h#L428
-*/
+	/* Peercoin */
 	{
 		.name                    = "peercoin",
-		.hrp                     = "pc",
-		.public_key_prefix       = 55,
-		.script_prefix           = 117,
-		.private_key_prefix      = 55+128
+		.hrp                     = "pc",  /* https://github.com/peercoin/peercoin/blob/v0.8.4ppc/src/chainparams.cpp#L135 */
+		.public_key_prefix       = 55,    /* https://github.com/peercoin/peercoin/blob/v0.8.4ppc/src/chainparams.cpp#L128 */
+		.script_prefix           = 117,   /* https://github.com/peercoin/peercoin/blob/v0.8.4ppc/src/chainparams.cpp#L129 */
+		.private_key_prefix      = 55+128 /* https://github.com/peercoin/peercoin/blob/v0.8.4ppc/src/chainparams.cpp#L130 */
 	},
 	{
 		.name                    = "peercoin-testnet",
-		.hrp                     = "tpc",
-		.public_key_prefix       = 111,
-		.script_prefix           = 196,
-		.private_key_prefix      = 111+128
+		.hrp                     = "tpc",  /* https://github.com/peercoin/peercoin/blob/v0.8.4ppc/src/chainparams.cpp#L230 */
+		.public_key_prefix       = 111,    /* https://github.com/peercoin/peercoin/blob/v0.8.4ppc/src/chainparams.cpp#L223 */
+		.script_prefix           = 196,    /* https://github.com/peercoin/peercoin/blob/v0.8.4ppc/src/chainparams.cpp#L224 */
+		.private_key_prefix      = 111+128 /* https://github.com/peercoin/peercoin/blob/v0.8.4ppc/src/chainparams.cpp#L225 */
 	},
-/*
-Namecoin:
-public keys / script / private keys:
-https://github.com/namecoin/namecoin-core/blob/09bdf373fb3cefa9faf868f1c415e0498e45d2a7/src/chainparams.cpp#L149
-https://github.com/namecoin/namecoin-core/blob/09bdf373fb3cefa9faf868f1c415e0498e45d2a7/src/chainparams.cpp#L290
-*/
+	/* Namecoin */
 	{
 		.name                    = "namecoin",
-		.hrp                     = "nc",
-		.public_key_prefix       = 52,
-		.script_prefix           = 13,
-		.private_key_prefix      = 52+128
+		.hrp                     = "nc",  /* https://github.com/namecoin/namecoin-core/blob/nc0.18.1/src/chainparams.cpp#L165 */
+		.public_key_prefix       = 52,    /* https://github.com/namecoin/namecoin-core/blob/nc0.18.1/src/chainparams.cpp#L158 */
+		.script_prefix           = 13,    /* https://github.com/namecoin/namecoin-core/blob/nc0.18.1/src/chainparams.cpp#L159 */
+		.private_key_prefix      = 52+128 /* https://github.com/namecoin/namecoin-core/blob/nc0.18.1/src/chainparams.cpp#L160 */
 	},
 	{
 		.name                    = "namecoin-testnet",
-		.hrp                     = "tn",
-		.public_key_prefix       = 111,
-		.script_prefix           = 196,
-		.private_key_prefix      = 111+128
+		.hrp                     = "tn",   /* https://github.com/namecoin/namecoin-core/blob/nc0.18.1/src/chainparams.cpp#L322 */
+		.public_key_prefix       = 111,    /* https://github.com/namecoin/namecoin-core/blob/nc0.18.1/src/chainparams.cpp#L439 */
+		.script_prefix           = 196,    /* https://github.com/namecoin/namecoin-core/blob/nc0.18.1/src/chainparams.cpp#L440 */
+		.private_key_prefix      = 111+128 /* https://github.com/namecoin/namecoin-core/blob/nc0.18.1/src/chainparams.cpp#L441 */
 	},
-/*
-Komodo:
-public keys / script / private keys:
-https://github.com/jl777/komodo/blob/a86845f3dc5444d24f4420908125f4c4cb58b4ff/src/chainparams.cpp#L104
-*/
+	/* Komodo */
 	{
 		.name                    = "komodo",
-		.hrp                     = "zs",
-		.public_key_prefix       = 60,
-		.script_prefix           = 85,
-		.private_key_prefix      = 60+128
-	},
+		.hrp                     = "zs",  /* https://github.com/jl777/komodo/blob/master/src/chainparams.cpp#L202 */
+		.public_key_prefix       = 60,    /* https://github.com/jl777/komodo/blob/master/src/chainparams.cpp#L190 */
+		.script_prefix           = 85,    /* https://github.com/jl777/komodo/blob/master/src/chainparams.cpp#L191 */
+		.private_key_prefix      = 60+128 /* https://github.com/jl777/komodo/blob/master/src/chainparams.cpp#L192 */
+	}
 };
 
 BitcoinKeyPrefix BitcoinNetworkType_GetPublicKeyPrefix(const struct BitcoinNetworkType *n)
