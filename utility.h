@@ -7,8 +7,9 @@
  *  @author Matthew Anger
  */
 
-#include <stdlib.h> /* size_t type */
 #include <stdint.h> /* uint* types */
+#include <stdio.h>
+#include <stdlib.h> /* size_t type */
 #include "result.h"
 
 /** @brief Convert ASCII hex digit to its value.
@@ -74,6 +75,17 @@ void Bitcoin_OutputHex(const void *source, size_t source_size);
  *  @param[in] size Number of bytes to reverse.
  */
 void Bitcoin_ReverseBytes(void *buffer, size_t size);
+
+/** @brief Write to a stdio file stream, handling short writes.
+ *
+ *  @param[in] ptr Pointer to data to write to a FILE pointer.
+ *  @param[in] size Number of members to output.
+ *  @param[in] nmemb Size of member in bytes.
+ *  @param[in] stream FILE pointer to output to.
+ */
+BitcoinResult Bitcoin_fwrite_safe(const void *ptr, size_t size, size_t nmemb,
+	FILE *stream
+);
 
 #endif
 

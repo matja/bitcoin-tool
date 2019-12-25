@@ -114,3 +114,28 @@ void Bitcoin_ReverseBytes(void *buffer, size_t size)
 	}
 }
 
+BitcoinResult Bitcoin_fwrite_safe(const void *ptr, size_t size,	size_t nmemb,
+	FILE *stream
+) {
+	size_t members_written = 0;
+	int done = 0;
+
+	do {
+		members_written = fwrite(ptr, size, nmemb, stream);
+		if (nmemb > 0 && members_written == 0) {
+			return BITCOIN_ERROR;
+		}
+		if (members_written == nmemb) {
+			done = 1;
+		} else if (members_written > nmemb) {
+			/* shouldn't happen, but still done */
+			done = 1;
+		} else if (members_written < nmemb) {
+			/* not done yet */
+			nmemb -= members_written;
+			ptr = (char *)ptr + (size * members_written);
+		}
+	} while (!done);
+
+	return BITCOIN_SUCCESS;
+}

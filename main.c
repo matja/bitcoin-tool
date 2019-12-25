@@ -129,9 +129,6 @@ struct BitcoinTool {
 	uint8_t output_raw[256]; /* raw input type converted to raw output type */
 	size_t output_raw_size;
 
-	char output_text[256]; /* raw output type converted to output format */
-	size_t output_text_size;
-
 	FILE *input_file_handle;
 
 	int (*parseOptions)(struct BitcoinTool *self, int argc, char *argv[]);
@@ -789,8 +786,6 @@ BitcoinResult Bitcoin_ConvertInputToOutput(struct BitcoinTool *self)
 
 BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 {
-	self->output_text_size = sizeof(self->output_text);
-
 	if (self->options.batch) {
 		/* in batch mode we open the file only once and read as much as
 		   we can out of it, splitting it into line-delimited text
@@ -872,13 +867,13 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 			self->input_size = bytes_read;
 		} else if (self->options.input) {
 			self->input_size = strlen(self->options.input);
-			if (self->input_size >= sizeof(self->input)) {
+			if (self->input_size + 1 >= sizeof(self->input)) {
 				applog(APPLOG_ERROR, __func__,
 					"--input value too large for internal buffer or any expected type"
 				);
 				return BITCOIN_ERROR;
 			}
-			strncpy(self->input, self->options.input, self->input_size);
+			memcpy(self->input, self->options.input, self->input_size);
 		}
 	}
 
@@ -1243,93 +1238,18 @@ BitcoinResult Bitcoin_CheckInputSize(struct BitcoinTool *self)
 	return BITCOIN_SUCCESS;
 }
 
-BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self);
-
-BitcoinResult Bitcoin_WriteAllOutput(struct BitcoinTool *self)
-{
-	FILE *file = stdout;
-
-	struct OutputFormatString {
-		enum OutputFormat output_format;
-		char *name;
-	} output_formats[] = {
-		{ OUTPUT_FORMAT_HEX,         "hex" },
-		{ OUTPUT_FORMAT_BASE58,      "base58" },
-		{ OUTPUT_FORMAT_BASE58CHECK, "base58check" },
-		{ OUTPUT_FORMAT_BECH32,      "bech32" }
-	}, *output_format = NULL;
-
-	struct OutputTypeString {
-		enum OutputType output_type;
-		char *name;
-		int is_set;
-	} output_types[] = {
-		{ OUTPUT_TYPE_ADDRESS,              "address" },
-		{ OUTPUT_TYPE_ADDRESS_CHECKSUM,     "address-checksum" },
-		{ OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160, "public-key-ripemd160" },
-		{ OUTPUT_TYPE_PUBLIC_KEY_SHA256,    "public-key-sha256" },
-		{ OUTPUT_TYPE_PUBLIC_KEY,           "public-key" },
-		{ OUTPUT_TYPE_PRIVATE_KEY_WIF,      "private-key-wif" },
-		{ OUTPUT_TYPE_PRIVATE_KEY,          "private-key" }
-	}, *output_type = NULL;
-
-	for (output_type = output_types;
-		output_type != output_types +
-		(sizeof(output_types) / sizeof(output_types[0]));
-		output_type++
-	) {
-		for (output_format = output_formats;
-			output_format != output_formats +
-			(sizeof(output_formats) / sizeof(output_formats[0]));
-			output_format++
-		) {
-			if (
-				output_type->output_type == OUTPUT_TYPE_ADDRESS_CHECKSUM
-				&& output_format->output_format == OUTPUT_FORMAT_BASE58CHECK
-			) {
-				/* This combination shouldn't be output, as I believe there
-				   is no valid use for it and there is potential for confusion
-				   for it to represent a usable address.
-				*/
-				continue;
-			}
-
-			if (
-				(output_type->output_type == OUTPUT_TYPE_ADDRESS && self->address_set) ||
-				(output_type->output_type == OUTPUT_TYPE_ADDRESS_CHECKSUM && self->address_set) ||
-				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 && self->public_key_ripemd160_set) ||
-				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY_SHA256 && self->public_key_sha256_set) ||
-				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY && self->public_key_set) ||
-				(output_type->output_type == OUTPUT_TYPE_PRIVATE_KEY_WIF && self->private_key_wif_set) ||
-				(output_type->output_type == OUTPUT_TYPE_PRIVATE_KEY && self->private_key_set)
-			) {
-				self->options.output_type = output_type->output_type;
-				self->options.output_format = output_format->output_format;
-				fprintf(file, "%s.%s:",
-					output_type->name, output_format->name
-				);
-				Bitcoin_WriteOutput(self);
-			}
-		}
-	}
-
-	return BITCOIN_SUCCESS;
-}
-
-BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
-{
+BitcoinResult Bitcoin_FormatOutput(struct BitcoinTool *self,
+	enum OutputType output_type, enum OutputFormat output_format,
+	char *output_buffer, size_t *output_buffer_size
+) {
 	struct BitcoinSHA256 checksum;
-	BitcoinResult result = BITCOIN_SUCCESS;
+	BitcoinResult result = BITCOIN_ERROR;
 	size_t output_raw_size = 0;
-	int bytes_wrote = 0;
 
 	memset(&checksum, 0, sizeof(checksum));
+	memset(output_buffer, 0, *output_buffer_size);
 
-	if (self->options.output_type == OUTPUT_TYPE_ALL) {
-		return Bitcoin_WriteAllOutput(self);
-	}
-
-	switch (self->options.output_type) {
+	switch (output_type) {
 		case OUTPUT_TYPE_ADDRESS :
 			output_raw_size = BITCOIN_ADDRESS_SIZE;
 			assert(sizeof(self->output_raw) >= output_raw_size);
@@ -1404,14 +1324,14 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 
 	self->output_raw_size = output_raw_size;
 
-	switch (self->options.output_format) {
+	switch (output_format) {
 		case OUTPUT_FORMAT_RAW : {
-			if (output_raw_size > sizeof(self->output_text)) {
+			if (output_raw_size > *output_buffer_size) {
 				applog(APPLOG_BUG, __func__,
 					"output_raw buffer (%u) larger than output_text buffer (%u),"
 					"unable to write output",
 					(unsigned)output_raw_size,
-					(unsigned)sizeof(self->output_text)
+					(unsigned)*output_buffer_size
 				);
 				result = BITCOIN_ERROR_INVALID_FORMAT;
 			}
@@ -1420,8 +1340,8 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 		case OUTPUT_FORMAT_HEX : {
 			int lower_case = 1;
 			result = Bitcoin_EncodeHex(
-				self->output_text, sizeof(self->output_text),
-				&self->output_text_size,
+				output_buffer, *output_buffer_size,
+				output_buffer_size,
 				self->output_raw, output_raw_size,
 				lower_case
 			);
@@ -1429,28 +1349,31 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 		}
 		case OUTPUT_FORMAT_BASE58 : {
 			result = Bitcoin_EncodeBase58(
-				self->output_text, sizeof(self->output_text),
-				&self->output_text_size,
+				output_buffer, *output_buffer_size,
+				output_buffer_size,
 				self->output_raw, output_raw_size
 			);
 			break;
 		}
 		case OUTPUT_FORMAT_BASE58CHECK : {
 			result = Bitcoin_EncodeBase58Check(
-				self->output_text, sizeof(self->output_text),
-				&self->output_text_size,
+				output_buffer, *output_buffer_size,
+				output_buffer_size,
 				self->output_raw, output_raw_size
 			);
 			break;
 		}
 		case OUTPUT_FORMAT_BECH32 : {
-			if (!segwit_addr_encode(
-				self->output_text,
+			if (segwit_addr_encode(
+				output_buffer,
 				self->options.network_type->hrp, 0,
 				self->output_raw+1, output_raw_size-1
-			))
-			{ result = BITCOIN_ERROR; }
-			self->output_text_size = strlen(self->output_text);
+			) == 1) {
+				result = BITCOIN_SUCCESS;
+			} else {
+				result = BITCOIN_ERROR;
+			}
+			*output_buffer_size = strlen(output_buffer);
 			break;
 		}
 		default:
@@ -1464,30 +1387,125 @@ BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self)
 	}
 
 	if (result != BITCOIN_SUCCESS) {
-		applog(APPLOG_ERROR, __func__,
-			"Failed to encode raw output data (%s)",
-			Bitcoin_ResultString(result)
-		);
 		return result;
 	}
 
-	if (strlen(self->output_text) == 0) {
+	if (strlen(output_buffer) == 0) {
 		applog(APPLOG_BUG, __func__,
 			"No text to output - something went wrong"
 		);
 		return BITCOIN_ERROR_INVALID_FORMAT;
 	}
 
-	bytes_wrote = fwrite(self->output_text, 1, self->output_text_size, stdout);
-	if (bytes_wrote < 0) {
-		applog(APPLOG_ERROR, __func__, "Error writing output (%s)", strerror(errno));
-	} else if (bytes_wrote < self->output_text_size) {
-		applog(APPLOG_ERROR, __func__, "Error writing output, short write");
+	return BITCOIN_SUCCESS;
+}
+
+BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self);
+
+BitcoinResult Bitcoin_WriteAllOutput(struct BitcoinTool *self)
+{
+	FILE *file = stdout;
+
+	struct OutputFormatString {
+		enum OutputFormat output_format;
+		char *name;
+	} output_formats[] = {
+		{ OUTPUT_FORMAT_HEX,         "hex" },
+		{ OUTPUT_FORMAT_BASE58,      "base58" },
+		{ OUTPUT_FORMAT_BASE58CHECK, "base58check" },
+		{ OUTPUT_FORMAT_BECH32,      "bech32" }
+	}, *output_format = NULL;
+
+	struct OutputTypeString {
+		enum OutputType output_type;
+		char *name;
+		int is_set;
+	} output_types[] = {
+		{ OUTPUT_TYPE_ADDRESS,              "address" },
+		{ OUTPUT_TYPE_ADDRESS_CHECKSUM,     "address-checksum" },
+		{ OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160, "public-key-ripemd160" },
+		{ OUTPUT_TYPE_PUBLIC_KEY_SHA256,    "public-key-sha256" },
+		{ OUTPUT_TYPE_PUBLIC_KEY,           "public-key" },
+		{ OUTPUT_TYPE_PRIVATE_KEY_WIF,      "private-key-wif" },
+		{ OUTPUT_TYPE_PRIVATE_KEY,          "private-key" }
+	}, *output_type = NULL;
+
+	for (output_type = output_types;
+		output_type != output_types +
+		(sizeof(output_types) / sizeof(output_types[0]));
+		output_type++
+	) {
+		for (output_format = output_formats;
+			output_format != output_formats +
+			(sizeof(output_formats) / sizeof(output_formats[0]));
+			output_format++
+		) {
+			if (
+				output_type->output_type == OUTPUT_TYPE_ADDRESS_CHECKSUM
+				&& output_format->output_format == OUTPUT_FORMAT_BASE58CHECK
+			) {
+				/* This combination shouldn't be output, as I believe there
+				   is no valid use for it and there is potential for confusion
+				   for it to represent a usable address.
+				*/
+				continue;
+			}
+
+			if (
+				(output_type->output_type == OUTPUT_TYPE_ADDRESS && self->address_set) ||
+				(output_type->output_type == OUTPUT_TYPE_ADDRESS_CHECKSUM && self->address_set) ||
+				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY_RIPEMD160 && self->public_key_ripemd160_set) ||
+				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY_SHA256 && self->public_key_sha256_set) ||
+				(output_type->output_type == OUTPUT_TYPE_PUBLIC_KEY && self->public_key_set) ||
+				(output_type->output_type == OUTPUT_TYPE_PRIVATE_KEY_WIF && self->private_key_wif_set) ||
+				(output_type->output_type == OUTPUT_TYPE_PRIVATE_KEY && self->private_key_set)
+			) {
+				char output_buffer[256];
+				size_t output_buffer_size = sizeof(output_buffer);
+				BitcoinResult format_result = BITCOIN_ERROR;
+
+				memset(&output_buffer, 0, sizeof(output_buffer));
+				format_result = Bitcoin_FormatOutput(self,
+					output_type->output_type, output_format->output_format,
+					output_buffer, &output_buffer_size);
+
+				if (format_result == BITCOIN_SUCCESS) {
+					fprintf(file, "%s.%s:",
+						output_type->name, output_format->name
+					);
+					Bitcoin_fwrite_safe(output_buffer, 1, output_buffer_size, stdout);
+					putchar('\n');
+				}
+			}
+		}
 	}
 
-	/* output a newline for clarity if we're on a TTY */
-	if (self->options.batch || isatty(fileno(stdin))) {
-		putchar('\n');
+	return BITCOIN_SUCCESS;
+}
+
+BitcoinResult Bitcoin_WriteOutput(struct BitcoinTool *self) {
+	char output_buffer[256];
+	size_t output_buffer_size = sizeof(output_buffer);
+	BitcoinResult format_result = BITCOIN_ERROR;
+
+	if (self->options.output_type == OUTPUT_TYPE_ALL) {
+		return Bitcoin_WriteAllOutput(self);
+	}
+
+	memset(&output_buffer, 0, sizeof(output_buffer));
+
+	format_result = Bitcoin_FormatOutput(self, self->options.output_type,
+		self->options.output_format, output_buffer, &output_buffer_size);
+	if (format_result == BITCOIN_SUCCESS) {
+		Bitcoin_fwrite_safe(output_buffer, 1, output_buffer_size, stdout);
+
+		/* output a newline for clarity if we're on a TTY */
+		if (self->options.batch || isatty(fileno(stdin))) {
+			putchar('\n');
+		}
+	} else {
+		applog(APPLOG_ERROR, __func__, "Error formatting output");
+		return BITCOIN_ERROR;
 	}
 
 	return BITCOIN_SUCCESS;
