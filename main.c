@@ -535,6 +535,18 @@ static int BitcoinTool_parseOptions(BitcoinTool *self
 			" unusual, please be sure what you are doing!");
 	}
 
+	if (
+		OUTPUT_FORMAT_BECH32 == o->output_format
+		&& PUBLIC_KEY_COMPRESSION_UNCOMPRESSED == o->public_key_compression
+	) {
+		errors++;
+		applog(APPLOG_ERROR, __func__,
+			"Using --output-format bech32 with --public-key-compression"
+			" uncompressed is not permitted.  For more details see "
+			"https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#Restrictions_on_public_key_type"
+		);
+	}
+
 	if (errors) {
 		applog(APPLOG_ERROR, __func__, "Use --help for more information.");
 		return 0;

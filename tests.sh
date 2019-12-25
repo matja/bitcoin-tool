@@ -3,12 +3,23 @@
 BITCOIN_TOOL="./bitcoin-tool"
 
 check () {
-	echo check $1
-	if [ "$2" != "$3" ];then
+	if [ "$2" != "$3" ] ; then
 		echo "failed test $1"
 		echo "output   : [$2]"
 		echo "expected : [$3]"
 		return 1
+	else
+		echo "pass $1"
+	fi
+}
+
+checkfail () {
+	if [ $? -eq 0 ] ; then
+		echo "failed test $1"
+		echo "expected to return >0 (error) but it returned 0 (success)"
+		return 1
+	else
+		echo "pass $1"
 	fi
 }
 
@@ -182,7 +193,17 @@ OUTPUT=$($BITCOIN_TOOL \
         --output-format hex \
         --input "${INPUT}")
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
-
+# -----------------------------------------------------------------------------
+TEST="16 - private key to uncompressed public key to bech32 should fail"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key \
+	--input-format hex \
+	--input 00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff \
+	--public-key-compression uncompressed \
+	--network bitcoin \
+	--output-type address \
+	--output-format bech32)
+checkfail "${TEST}" || exit 1
 # -----------------------------------------------------------------------------
 # Test various different network prefixes
 # -----------------------------------------------------------------------------
