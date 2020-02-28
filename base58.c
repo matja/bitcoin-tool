@@ -88,7 +88,8 @@ BitcoinResult Bitcoin_EncodeBase58(
 
 BitcoinResult Bitcoin_EncodeBase58Check(
 	char *output, size_t output_size, size_t *encoded_output_size,
-	const void *source, size_t source_size
+	const void *source, size_t source_size,
+	void (*checksum_fn)(struct BitcoinSHA256 *output, const void *input, size_t size)
 )
 {
 	struct BitcoinSHA256 checksum;
@@ -96,8 +97,7 @@ BitcoinResult Bitcoin_EncodeBase58Check(
 	unsigned char *buffer = malloc(buffer_size);
 	BitcoinResult result = 0;
 
-	/* calc checksum bytes */
-	Bitcoin_DoubleSHA256(&checksum, source, source_size);
+	(*checksum_fn)(&checksum, source, source_size);
 
 	memcpy(buffer, source, source_size);
 	memcpy(buffer + source_size, &checksum, BITCOIN_BASE58CHECK_CHECKSUM_SIZE);
@@ -210,7 +210,8 @@ done:
 
 BitcoinResult Bitcoin_DecodeBase58Check(
 	uint8_t *output, size_t output_buffer_size, size_t *decoded_output_size,
-	const void *input, size_t input_size
+	const void *input, size_t input_size,
+	void (*checksum_fn)(struct BitcoinSHA256 *output, const void *input, size_t size)
 )
 {
 	struct BitcoinSHA256 hash;
@@ -225,7 +226,8 @@ BitcoinResult Bitcoin_DecodeBase58Check(
 		return result;
 	}
 
-	Bitcoin_DoubleSHA256(&hash, output,
+
+	(*checksum_fn)(&hash, output, 
 		temp_decoded_output_size - BITCOIN_BASE58CHECK_CHECKSUM_SIZE
 	);
 
@@ -250,7 +252,8 @@ BitcoinResult Bitcoin_FixBase58Check(
 	const char *input, size_t input_size,
 	unsigned change_chars,
 	unsigned remove_chars,
-	unsigned insert_chars
+	unsigned insert_chars,
+	void (*checksum_fn)(struct BitcoinSHA256 *output, const void *input, size_t size)
 )
 {
 	/* attempt to 'fix' an invalid base58check string by changing characters
@@ -310,7 +313,7 @@ BitcoinResult Bitcoin_FixBase58Check(
 				}
 
 				result = Bitcoin_DecodeBase58Check(output, output_buffer_size,
-					decoded_output_size, fixed_output, input_size
+					decoded_output_size, fixed_output, input_size, checksum_fn
 				);
 
 				if (result == BITCOIN_SUCCESS) {

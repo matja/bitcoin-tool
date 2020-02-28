@@ -285,6 +285,177 @@ OUTPUT=$($BITCOIN_TOOL \
 	--input "${INPUT}")
 check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 # -----------------------------------------------------------------------------
+TEST="prefix8 - WIF compressed private key to address (groestlcoin)"
+EXPECTED="FgM82sAfq6oRGMQuiyuzfMsuBFeWss7g52"
+INPUT="5JYALgSRx82wjRGVMa31tcbL5rUwZmX16ChUcRnSo6EFExgH4V6"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key-wif \
+	--input-format base58check \
+	--output-type address \
+	--output-format base58check \
+	--network groestlcoin \
+	--input "${INPUT}")
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="18 - hex private key to compressed address (groestlcoin)"
+EXPECTED="Ffqz14cyvZYJavD76t6oHNDJnGiWcZMVxR"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key \
+	--input-format hex \
+	--output-type address \
+	--output-format base58check \
+	--public-key-compression compressed \
+	--network groestlcoin \
+	--input 0000000000000000000000000000000000000000000000000000000000000001 )
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="19 - hex private key to uncompressed address (groestlcoin)"
+EXPECTED="FiT6218RsUiTMyG5DA8bDjrNNuofYV2MdF"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key \
+	--input-format hex \
+	--output-type address \
+	--output-format base58check \
+	--public-key-compression uncompressed \
+	--network groestlcoin \
+	--input 0000000000000000000000000000000000000000000000000000000000000001 )
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="20 - WIF uncompressed private key to address (groestlcoin)"
+EXPECTED="Fac2ZCXKjr7VtRMpajebt4RAaHdLrrUSbW"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key-wif \
+	--input-format base58check \
+	--output-type address \
+	--output-format base58check \
+	--network groestlcoin \
+	--input 5J1LYLWqNxJBTwdGAmzYnpkqqSuFu48fsHv8jgojFMV2Z8rnPLg )
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="21 - raw private key file, to uncompressed base58check WIF private key (groestlcoin)"
+EXPECTED="5JZjfs5wJv1gNkJXCmYpyj6VxciqPkwmK4yHW8zMmPN1PUmZ2kZ"
+INPUT="62A87AD3272B41E67108FEA10C57BA6ED609F2F7A2264A83B690CD45707090D1"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key \
+	--input-format raw \
+	--input-file <(echo "${INPUT}"|xxd -r -p) \
+	--output-type private-key-wif \
+	--output-format base58check \
+	--public-key-compression uncompressed \
+	--network groestlcoin \
+)
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="22 - raw private key file, to compressed base58check WIF private key (groestlcoin)"
+EXPECTED="KzXVLY4ni4yznz8LJwdUmNoGpUfebSxiakXRqcGAeuhihzfBf3ZU"
+INPUT="62A87AD3272B41E67108FEA10C57BA6ED609F2F7A2264A83B690CD45707090D1"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key \
+	--input-format raw \
+	--input-file <(echo "${INPUT}"|xxd -r -p) \
+	--output-type private-key-wif \
+	--output-format base58check \
+	--public-key-compression compressed \
+	--network groestlcoin \
+)
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="23 - hex ripemd160 hash of public key, to base58check address (groestlcoin)"
+EXPECTED="FeBhpvNkdtxC7K3LEVT8uqskzwC4mFYrhR"
+INPUT="62E907B15CBF27D5425399EBF6F0FB50EBB88F18"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type public-key-rmd \
+	--input-format hex \
+	--input "${INPUT}" \
+	--output-type address \
+	--output-format base58check \
+	--network groestlcoin \
+)
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="24 - base58check address, to hex ripemd160 hash of public key (groestlcoin)"
+EXPECTED="62e907b15cbf27d5425399ebf6f0fb50ebb88f18"
+INPUT="FeBhpvNkdtxC7K3LEVT8uqskzwC4mFYrhR"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type address \
+	--input-format base58check \
+	--input "${INPUT}" \
+	--output-type public-key-rmd \
+	--network groestlcoin \
+	--output-format hex )
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="25 - fix base58check address, by changing 1 character (groestlcoin)"
+EXPECTED="FXYTDKNYERGPgSJ4Q6L4jfyKGnxaPQq37q"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type private-key-wif \
+	--input-format base58check \
+	--output-type address \
+	--output-format base58check \
+	--input 5J5sKGFLpZ4bQXEHiEmDp9Fuf7k36FqF3woaNKHKDHnLfN6EBVV \
+	--network groestlcoin \
+	--fix-base58check )
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="26 - convert 'Hash 160' to address (groestlcoin)"
+EXPECTED="FWmofMSqcvWapfb5spKSTN8Pzvd9UBdoNw"
+INPUT="119b098e2e980a229e139a9ed01a469e518e6f26"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type public-key-rmd \
+	--output-type address \
+	--input-format hex \
+	--output-format base58check \
+	--network groestlcoin \
+	--input "${INPUT}")
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="27 - convert 'SHA256' to address (groestlcoin)"
+EXPECTED="FnXub2wSu4HPhtGY1yghQEdf3RwnLqe29m"
+INPUT="904b8a01c68095a9e825d28082c04b75b1f56277648256985717620e8913b79b"
+OUTPUT=$($BITCOIN_TOOL \
+        --input-type public-key-sha \
+        --output-type address \
+        --input-format hex \
+        --network groestlcoin \
+        --output-format base58check \
+        --input "${INPUT}")
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="28 - convert WIF private key to address bech32 (groestlcoin)"
+EXPECTED="grs1qcvsk723ktcp3h7s4wscfdnq46xa30a4npjc8ja"
+INPUT="L5UqjNxVgACUoDy2hf6gpJrmAyLwVVWvzchFHZ1dwePByBp3uQCt"
+OUTPUT=$($BITCOIN_TOOL \
+        --input-type private-key-wif \
+        --output-type address \
+        --input-format base58check \
+        --network groestlcoin \
+        --output-format bech32 \
+        --input "${INPUT}")
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="29 - bech32 address, to hex ripemd160 hash of public key (groestlcoin)"
+EXPECTED="2da1e7fd3ec09feafe73884a94924931eef4c7a7"
+INPUT="grs1q9ks70lf7cz074lnn3p9ffyjfx8h0f3a8nz55sg"
+OUTPUT=$($BITCOIN_TOOL \
+	--input-type address \
+	--input-format bech32 \
+	--input "${INPUT}" \
+	--network groestlcoin \
+	--output-type public-key-rmd \
+	--output-format hex )
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
+TEST="30 - convert WIF private key to ripemd160 hash of public key (groestlcoin)"
+EXPECTED="bef0f65aa610e3ee919e5fc979c3c6ab6cfaac8c"
+INPUT="L3GzRAGwCqfSNFr6g1NQm7edn29DgAKZJ6owUBqYELpP6Kgo3XKu"
+OUTPUT=$($BITCOIN_TOOL \
+        --input-type private-key-wif \
+        --output-type public-key-rmd \
+        --input-format base58check \
+        --network groestlcoin \
+        --output-format hex \
+        --input "${INPUT}")
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
 
 
 

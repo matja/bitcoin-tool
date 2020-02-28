@@ -925,7 +925,8 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 		case INPUT_FORMAT_BASE58CHECK : {
 			BitcoinResult result = Bitcoin_DecodeBase58Check(
 				self->input_raw, sizeof(self->input_raw), &self->input_raw_size,
-				self->input, self->input_size
+				self->input, self->input_size,
+				self->options.network_type != NULL ? self->options.network_type->checksum_fn : Bitcoin_DoubleSHA256
 			);
 			if (result != BITCOIN_SUCCESS) {
 				applog(APPLOG_ERROR, __func__,
@@ -945,7 +946,8 @@ BitcoinResult Bitcoin_ParseInput(struct BitcoinTool *self)
 						self->input, self->input_size,
 						self->options.fix_base58_change_chars,
 						self->options.fix_base58_insert_chars,
-						self->options.fix_base58_remove_chars
+						self->options.fix_base58_remove_chars,
+						self->options.network_type != NULL ? self->options.network_type->checksum_fn : Bitcoin_DoubleSHA256
 					);
 
 					free(output_base58);
@@ -1258,7 +1260,9 @@ BitcoinResult Bitcoin_FormatOutput(struct BitcoinTool *self,
 		case OUTPUT_TYPE_ADDRESS_CHECKSUM :
 			output_raw_size = BITCOIN_ADDRESS_SIZE + BITCOIN_BASE58CHECK_CHECKSUM_SIZE;
 			assert(sizeof(self->output_raw) >= output_raw_size);
-			Bitcoin_DoubleSHA256(&checksum, self->address.data, BITCOIN_ADDRESS_SIZE);
+			if(self->options.network_type)
+				self->options.network_type->checksum_fn(&checksum, self->address.data, BITCOIN_ADDRESS_SIZE);
+			else Bitcoin_DoubleSHA256(&checksum, self->address.data, BITCOIN_ADDRESS_SIZE);
 			memcpy(self->output_raw, self->address.data, BITCOIN_ADDRESS_SIZE);
 			memcpy(self->output_raw + BITCOIN_ADDRESS_SIZE, &checksum.data,
 				BITCOIN_BASE58CHECK_CHECKSUM_SIZE);
@@ -1359,7 +1363,8 @@ BitcoinResult Bitcoin_FormatOutput(struct BitcoinTool *self,
 			result = Bitcoin_EncodeBase58Check(
 				output_buffer, *output_buffer_size,
 				output_buffer_size,
-				self->output_raw, output_raw_size
+				self->output_raw, output_raw_size,
+				self->options.network_type ? self->options.network_type->checksum_fn : Bitcoin_DoubleSHA256
 			);
 			break;
 		}

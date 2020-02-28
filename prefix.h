@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+#include "hash.h"
 /* prefix byte for addresses, public keys and private keys, to identify network */
 typedef unsigned BitcoinKeyPrefix;
 
@@ -13,6 +14,7 @@ struct BitcoinNetworkType
 	BitcoinKeyPrefix public_key_prefix,
 		script_prefix,
 		private_key_prefix;
+	void (*checksum_fn)(struct BitcoinSHA256 *output, const void *input, size_t size);
 };
 
 const struct BitcoinNetworkType *Bitcoin_GetNetworkTypeByName(const char *name);

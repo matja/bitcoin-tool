@@ -56,5 +56,17 @@ void Bitcoin_RIPEMD160(struct BitcoinRIPEMD160 *output,
 	const void *input, size_t size
 );
 
+/** @brief Calculate double Groestl512 hash (first 32 bytes of Groestl512 
+ * 		   hash of Groestl512 hash) and write to output buffer.
+ *
+ *  @param[out] output Pointer to hash output buffer.
+ *  @param[in] input Pointer to data to hash.
+ *  @param[in] size Number of bytes of data at 'input' to hash.
+ */
+void Groestlcoin_DoubleGroestl(struct BitcoinSHA256 *output, 
+	const void *input, size_t size
+);
+
+
 #endif
 

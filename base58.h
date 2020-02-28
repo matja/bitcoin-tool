@@ -23,6 +23,7 @@
 #include <stdint.h> /* uint8_t */
 
 #include "result.h" /* BitcoinResult / BITCOIN_SUCCESS / BITCOIN_ERROR_* */
+#include "hash.h"
 
 /** Base58Check defines a four byte suffix to be used as the checksum */
 #define BITCOIN_BASE58CHECK_CHECKSUM_SIZE 4
@@ -55,6 +56,7 @@ BitcoinResult Bitcoin_EncodeBase58(
  *              to the contents pointed to by 'output_size'.
  *  @param[in] source Pointer to sequence of bytes to read.
  *  @param[in] source_size Number of bytes to read.
+ *  @param[in] checksum_fn The hash function to use for the checksum bytes
  *
  *  @return BitcoinResult indicating error state :
  *          BITCOIN_SUCCESS if success.
@@ -62,7 +64,8 @@ BitcoinResult Bitcoin_EncodeBase58(
  */
 BitcoinResult Bitcoin_EncodeBase58Check(
 	char *output, size_t output_size, size_t *encoded_output_size,
-	const void *source, size_t source_size
+	const void *source, size_t source_size,
+	void (*checksum_fn)(struct BitcoinSHA256 *output, const void *input, size_t size)
 );
 
 /** @brief Convert a Base58 string to its binary representation.
@@ -101,6 +104,7 @@ BitcoinResult Bitcoin_DecodeBase58(
  *              maximum specified in output_buffer_size.
  *  @param[in] source Pointer to Base58Check string to read.
  *  @param[in] source_size Number of characters to read from 'source'.
+ *  @param[in] checksum_fn The hash function to use for the checksum bytes
  *
  *  @return BitcoinResult indicating error state :
  *          BITCOIN_SUCCESS if success.
@@ -109,7 +113,8 @@ BitcoinResult Bitcoin_DecodeBase58(
  */
 BitcoinResult Bitcoin_DecodeBase58Check(
 	uint8_t *output, size_t output_buffer_size, size_t *decoded_output_size,
-	const void *input, size_t input_size
+	const void *input, size_t input_size,
+	void (*checksum_fn)(struct BitcoinSHA256 *output, const void *input, size_t size)
 );
 
 /** @brief Convert a Base58Check string to its binary representation, changing
@@ -143,6 +148,7 @@ BitcoinResult Bitcoin_DecodeBase58Check(
  *  @param[in] remove_chars Maximum number of characters to remove.  Every
  *                          possible combination of inserted characters up to
  *                          this amount will be tested.
+ *  @param[in] checksum_fn The hash function to use for the checksum bytes
  *
  *  @return BitcoinResult indicating error state :
  *          BITCOIN_SUCCESS if success.
@@ -155,7 +161,8 @@ BitcoinResult Bitcoin_FixBase58Check(
 	const char *input, size_t input_size,
 	unsigned change_chars,
 	unsigned insert_chars,
-	unsigned remove_chars
+	unsigned remove_chars,
+	void (*checksum_fn)(struct BitcoinSHA256 *output, const void *input, size_t size)
 );
 
 #endif
