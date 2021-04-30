@@ -205,6 +205,107 @@ OUTPUT=$($BITCOIN_TOOL \
 	--output-format bech32)
 checkfail "${TEST}" || exit 1
 # -----------------------------------------------------------------------------
+TEST="17 - 0-padded base58 decoding prefix initialization"
+# test all prefix-0x00 addresses from all byte 0x00 to all byte 0xff
+# test all prefix-0x05 addresses from all byte 0x00 to all byte 0xff
+# test initialization of the address prefix byte with a leading-zero address
+OUTPUT=$($BITCOIN_TOOL \
+	--batch \
+	--input-type address \
+	--input-format base58check \
+	--output-type public-key-rmd \
+	--output-format hex \
+	--network bitcoin \
+	--input-file <(
+cat << EOF
+31h1vYVSYuKP6AhS86fbRdMw9XHieotbST
+31h1vYVSYuKP6AhS86fbRdMw9XJDQPwwHs
+31h1vYVSYuKP6AhS86fbRdMw9ZVCQhvrL5
+31h1vYVSYuKP6AhS86fbRdMwKDxjLM8dc6
+31h1vYVSYuKP6AhS86fbRdNfy3VH8G4Sg9
+31h1vYVSYuKP6AhS86fbRgcvtpKpcWLBoH
+31h1vYVSYuKP6AhS86fbg1YpEiaWZGh5rt
+31h1vYVSYuKP6AhS86gguZPS5MQxGC1QE1
+31h1vYVSYuKP6AhS8BVni5ycjwEYTkpSdW
+31h1vYVSYuKP6AhSVRPQ56rh3DHErpieSv
+31h1vYVSYuKP6Aj4EjBUpzHfJ3Bbeobh3f
+31h1vYVSYuKP6HrqPGaUXzVxjUHWRShSQS
+31h1vYVSYuKPdnC75r5BWvnvzGNThRohnd
+31h1vYVSYuMncqFQBgn4pZhEHgEaSjuN1c
+31h1vYVSZ5wESKnsxfEWfSXb91S8EpSRiP
+31h1vYVTMmZC4JjUTqxaPoycskQdbaPPEF
+31h1vYZ1QeGgsdhmHBd3QUsHXRpBQhqGxd
+31h1vpEU6VRsmN9zDyQGN8usqMkYNx1zq7
+31h382QFyTyx6ju8431U24MJyRh2Sezzsw
+31nJbjcky5Z5ciHgBxNuPvcGapAkXv1ZMT
+3R2cuenjG5nFubqX9Wzuukdin2YfBbQ6Kw
+1111111111111111111114oLvT2
+11111111111111111111Vp5gvNh
+11111111111111111113CUpEqkk2
+111111111111111111Ahg1nPYUbR
+11111111111111111jpXCZcHpsAq
+11111111111111114FzkJ371115Z2
+111111111111111FPBt6CHnzxAWAZ
+1111111111111126Uw2Vvq8EiC1ZQH
+11111111111115qCHTcgbQwpuTX8cA
+111111111111NKioeUVktgzXJkQp7x
+111111111112d7dWtQMvj9Wtt7EvWou
+11111111118AQGAut7N92awznrLKxEs
+111111111YcVfxkQb6JRzqk5kEMSuu3
+111111113QXfYy4b7UPwLJ99wrsF6tRK
+1111111BcrMA6SqZZvEpAezV9QmS2UWs
+111111osEoy933LkHyyBcgjE7v5mHW44
+111114ZrjxJnU1LA5xSyrWMNuXTtz1Cfb
+1111Gk2Yb7VgCTZ6sjfwWYwgqTpqCjdnG
+1112CUupRZfa1aCgvwLsbRzNpuQJpnvta6
+116HgC8KRBEhXYbF4riJyJFLSHt31kYasP
+1QLbz7JHiBTspS962RLKV8GndWFwi5j6Qr
+EOF
+))
+EXPECTED='0000000000000000000000000000000000000000
+00000000000000000000000000000000000000ff
+000000000000000000000000000000000000ffff
+0000000000000000000000000000000000ffffff
+00000000000000000000000000000000ffffffff
+000000000000000000000000000000ffffffffff
+0000000000000000000000000000ffffffffffff
+00000000000000000000000000ffffffffffffff
+000000000000000000000000ffffffffffffffff
+0000000000000000000000ffffffffffffffffff
+00000000000000000000ffffffffffffffffffff
+000000000000000000ffffffffffffffffffffff
+0000000000000000ffffffffffffffffffffffff
+00000000000000ffffffffffffffffffffffffff
+000000000000ffffffffffffffffffffffffffff
+0000000000ffffffffffffffffffffffffffffff
+00000000ffffffffffffffffffffffffffffffff
+000000ffffffffffffffffffffffffffffffffff
+0000ffffffffffffffffffffffffffffffffffff
+00ffffffffffffffffffffffffffffffffffffff
+ffffffffffffffffffffffffffffffffffffffff
+0000000000000000000000000000000000000000
+00000000000000000000000000000000000000ff
+000000000000000000000000000000000000ffff
+0000000000000000000000000000000000ffffff
+00000000000000000000000000000000ffffffff
+000000000000000000000000000000ffffffffff
+0000000000000000000000000000ffffffffffff
+00000000000000000000000000ffffffffffffff
+000000000000000000000000ffffffffffffffff
+0000000000000000000000ffffffffffffffffff
+00000000000000000000ffffffffffffffffffff
+000000000000000000ffffffffffffffffffffff
+0000000000000000ffffffffffffffffffffffff
+00000000000000ffffffffffffffffffffffffff
+000000000000ffffffffffffffffffffffffffff
+0000000000ffffffffffffffffffffffffffffff
+00000000ffffffffffffffffffffffffffffffff
+000000ffffffffffffffffffffffffffffffffff
+0000ffffffffffffffffffffffffffffffffffff
+00ffffffffffffffffffffffffffffffffffffff
+ffffffffffffffffffffffffffffffffffffffff'
+check "${TEST}" "${OUTPUT}" "${EXPECTED}" || exit 1
+# -----------------------------------------------------------------------------
 # Test various different network prefixes
 # -----------------------------------------------------------------------------
 TEST="prefix1 - WIF compressed private key to address (bitcoin)"

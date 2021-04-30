@@ -139,6 +139,7 @@ BitcoinResult Bitcoin_DecodeBase58(
 	BIGNUM *base, *m1, *m2, *result, *sub;
 	BN_CTX *bn_ctx;
 
+	memset(output, 0, output_buffer_size);
 	bn_ctx = BN_CTX_new();
 	base = BN_new();
 	m1 = BN_new();
