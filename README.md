@@ -70,6 +70,7 @@ more data than is expected, then it'll refuse to process it at all.
       hex         : Hexadecimal encoded
       base58      : Base58 encoded
       base58check : Base58Check encoded (most common)
+      bech32      : Bech32 encoded (native SegWit)
   --output-type  : Output data type, must be one of :
       all              : All output types, as type:value pairs, most of which
                          are never commonly used, probably for good reason.
@@ -85,6 +86,7 @@ more data than is expected, then it'll refuse to process it at all.
       hex         : Hexadecimal encoded
       base58      : Base58 encoded
       base58check : Base58Check encoded (most common)
+      bech32      : Bech32 encoded (native SegWit)
 
   --input               : Specify input data on command line
   --input-file          : Specify file name to read for input ('-' for stdin)
