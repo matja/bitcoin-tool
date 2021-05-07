@@ -38,6 +38,15 @@ Requires Cygwin packages: `bash`, `make`, `mingw64-x86_64-gcc-core`, `openssl-de
 
 Use `make CC=other_cc` to specify a different compiler if needed.
 
+### macOS
+Export flags for openssl lib paths before running `make`.
+
+```bash
+export LDFLAGS="-L/usr/local/opt/openssl/lib -L/usr/local/lib -L/usr/local/opt/expat/lib"
+export CFLAGS="-I/usr/local/opt/openssl/include/ -I/usr/local/include -I/usr/local/opt/expat/include"
+export CPPFLAGS="-I/usr/local/opt/openssl/include/ -I/usr/local/include -I/usr/local/opt/expat/include"
+```
+
 ## Description
 I created this because I couldn't find an offline tool or library able
 to create addresses from Bitcoin private keys, and as a learning exercise in
